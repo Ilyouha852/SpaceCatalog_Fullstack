@@ -4,7 +4,6 @@ from django.urls import reverse
 from spacecatalog.models import Astronomer, ObjectType, SpaceObject, Researcher, Observation
 from datetime import date
 
-
 class AstronomerCRUDTestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -47,7 +46,6 @@ class AstronomerCRUDTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Astronomer.objects.count(), 0)
 
-
 class ObjectTypeCRUDTestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -87,7 +85,6 @@ class ObjectTypeCRUDTestCase(APITestCase):
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(ObjectType.objects.count(), 0)
-
 
 class SpaceObjectCRUDTestCase(APITestCase):
     def setUp(self):
@@ -156,7 +153,6 @@ class SpaceObjectCRUDTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(SpaceObject.objects.count(), 0)
 
-
 class ResearcherCRUDTestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -202,7 +198,6 @@ class ResearcherCRUDTestCase(APITestCase):
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Researcher.objects.count(), 0)
-
 
 class ObservationCRUDTestCase(APITestCase):
     def setUp(self):

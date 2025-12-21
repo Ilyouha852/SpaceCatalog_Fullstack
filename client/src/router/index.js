@@ -1,4 +1,3 @@
-
 import AstronomersView from '@/views/AstronomersView.vue'
 import ObservationsView from '@/views/ObservationsView.vue'
 import SpaceObjectsView from '@/views/SpaceObjectsView.vue'

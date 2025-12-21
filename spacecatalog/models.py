@@ -5,7 +5,6 @@ from django.dispatch import receiver
 from django.db.models.signals import post_delete
 import pyotp
 
-
 class Astronomer(models.Model):
     name = models.TextField("ФИО")
     bio = models.TextField("Биография")
@@ -17,7 +16,6 @@ class Astronomer(models.Model):
         verbose_name = "Астроном"
         verbose_name_plural = "Астрономы"
 
-
 class ObjectType(models.Model):
     name = models.TextField("Название типа")
     description = models.TextField("Описание типа")
@@ -28,7 +26,6 @@ class ObjectType(models.Model):
     class Meta:
         verbose_name = "Тип объекта"
         verbose_name_plural = "Типы объектов"
-
 
 class SpaceObject(models.Model):
     name = models.TextField("Название")
@@ -47,7 +44,6 @@ class SpaceObject(models.Model):
         verbose_name = "Космический объект"
         verbose_name_plural = "Космические объекты"
 
-
 class Researcher(models.Model):
     first_name = models.TextField("Имя")
     last_name = models.TextField("Фамилия")
@@ -63,7 +59,6 @@ class Researcher(models.Model):
     class Meta:
         verbose_name = "Исследователь"
         verbose_name_plural = "Исследователи"
-
 
 class Observation(models.Model):
     STATUS_CHOICES = [
@@ -84,7 +79,6 @@ class Observation(models.Model):
     class Meta:
         verbose_name = "Наблюдение"
         verbose_name_plural = "Наблюдения"
-
 
 @receiver(post_save, sender=Researcher)
 def create_user_for_researcher(sender, instance, created, **kwargs):

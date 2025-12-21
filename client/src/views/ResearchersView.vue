@@ -1,100 +1,92 @@
 <script setup>
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import {computed, onBeforeMount, ref} from 'vue';
-import {useUserStore} from '@/stores/user_store';
-import {useDataStore} from '@/stores/data_store';
-import {storeToRefs} from "pinia";
-const userStore = useUserStore()
-const dataStore = useDataStore()
+import { onBeforeMount, ref } from 'vue';
+import { useUserStore } from '@/stores/user_store';
+import { useDataStore } from '@/stores/data_store';
+import { storeToRefs } from 'pinia';
 
-const {
-    userInfo,
-} = storeToRefs(userStore)
+const userStore = useUserStore();
+const dataStore = useDataStore();
 
-const {
-    researchers,
-    spaceObjects,
-    objectTypes,
-    astronomers,
-    observations
-} = storeToRefs(dataStore)
+const { userInfo } = storeToRefs(userStore);
+const { researchers } = storeToRefs(dataStore);
 
 onBeforeMount(async () => {
-    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
-    await dataStore.fetchAllData()
-})
+  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+  await dataStore.fetchAllData();
+});
 
 const researcherToAdd = ref({});
-
-
 const researcherPictureRef = ref();
 const researcherImageUrl = ref();
+
+const researcherToEdit = ref({});
+const researcherEditPictureRef = ref();
+const researcherEditImageUrl = ref();
+
 async function researcherAddPictureChange() {
-  researcherImageUrl.value = URL.createObjectURL(researcherPictureRef.value.files[0])
+  researcherImageUrl.value = URL.createObjectURL(researcherPictureRef.value.files[0]);
 }
+
 async function onResearcherAdd() {
   const formData = new FormData();
-  
+
   formData.set('first_name', researcherToAdd.value.first_name);
   formData.set('last_name', researcherToAdd.value.last_name);
   formData.set('email', researcherToAdd.value.email);
   formData.set('card_number', researcherToAdd.value.card_number);
- 
+
   if (researcherPictureRef.value.files[0]) {
-     formData.append('picture', researcherPictureRef.value.files[0]);
+    formData.append('picture', researcherPictureRef.value.files[0]);
   }
-  await axios.post("/api/researchers/",formData, {
+
+  await axios.post('/api/researchers/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   });
   await dataStore.fetchResearchers();
 }
-async function onRemoveClick(researcher) {
-  await axios.delete(`/api/researchers/${researcher.id}/`);
-  await dataStore.fetchResearchers();
-}
-const researcherToEdit = ref({});
 
-
-const researcherEditPictureRef = ref();
-const researcherEditImageUrl = ref();
-async function researcherEditPictureChange() {
-  if (researcherEditPictureRef.value.files[0]) {
-    researcherEditImageUrl.value = URL.createObjectURL(researcherEditPictureRef.value.files[0])
-  }
-}
 async function onResearcherEditClick(researcher) {
   researcherToEdit.value = { ...researcher };
-  researcherEditImageUrl.value = null; 
- 
+  researcherEditImageUrl.value = null;
 }
+
+async function researcherEditPictureChange() {
+  if (researcherEditPictureRef.value.files[0]) {
+    researcherEditImageUrl.value = URL.createObjectURL(researcherEditPictureRef.value.files[0]);
+  }
+}
+
 async function onUpdateResearcher() {
   const formData = new FormData();
-  
-  
+
   if (researcherEditPictureRef.value.files[0]) {
     formData.append('picture', researcherEditPictureRef.value.files[0]);
   }
+
   formData.set('first_name', researcherToEdit.value.first_name);
   formData.set('last_name', researcherToEdit.value.last_name);
   formData.set('email', researcherToEdit.value.email);
   formData.set('card_number', researcherToEdit.value.card_number);
 
-  
   await axios.put(`/api/researchers/${researcherToEdit.value.id}/`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   });
-  
-  await dataStore.fetchResearchers();
 
+  await dataStore.fetchResearchers();
 }
 
-
+async function onRemoveClick(researcher) {
+  await axios.delete(`/api/researchers/${researcher.id}/`);
+  await dataStore.fetchResearchers();
+}
 </script>
+
 <template>
   <div class="border p-5" v-if="userInfo && userInfo.is_authenticated">
         <div class="mb-5" v-if="userInfo && userInfo.is_authenticated && userInfo.is_staff">
@@ -291,5 +283,3 @@ async function onUpdateResearcher() {
     </div>
 </div>
 </template>
-<style scoped>
-</style>

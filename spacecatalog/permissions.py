@@ -1,7 +1,6 @@
 from rest_framework import permissions
 from datetime import datetime
 
-
 class Has2FAVerified(permissions.BasePermission):
     
     message = "Требуется двухфакторная аутентификация для выполнения этой операции."

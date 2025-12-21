@@ -1,51 +1,51 @@
 <script setup>
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { onMounted, ref } from 'vue';
+import { useUserStore } from '@/stores/user_store';
+import { storeToRefs } from 'pinia';
 
-import {onMounted, ref} from 'vue';
-import {useUserStore} from '@/stores/user_store';
-import {storeToRefs} from "pinia";
+const userStore = useUserStore();
+const { userInfo } = storeToRefs(userStore);
 
-const userStore = useUserStore()
-const isLoading = ref(true)
-
-const username = ref();
-const password = ref();
-const loginError = ref('');
+const isLoading = ref(true);
 const isLoginLoading = ref(false);
-const {
-    userInfo,
-} = storeToRefs(userStore)
+
+const username = ref('');
+const password = ref('');
+const loginError = ref('');
 
 onMounted(async () => {
-  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
-  
+  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+
   try {
     await userStore.checkLogin();
   } finally {
     isLoading.value = false;
   }
-})
+});
+
 async function onFormSend() {
-    loginError.value = '';
-    isLoginLoading.value = true;
-    try {
-        const result = await userStore.login(username.value, password.value);
-        if (!result.success) {
-            loginError.value = result.error || 'Failed to login';
-        }
-    } catch (error) {
-        loginError.value = 'An error occurred during login';
-        console.error('Login error:', error);
-    } finally {
-        isLoginLoading.value = false;
+  loginError.value = '';
+  isLoginLoading.value = true;
+  try {
+    const result = await userStore.login(username.value, password.value);
+    if (!result.success) {
+      loginError.value = result.error || 'Failed to login';
     }
-}
-async function handleLogout() {
-    await userStore.logout();
+  } catch (error) {
+    loginError.value = 'An error occurred during login';
+    console.error('Login error:', error);
+  } finally {
+    isLoginLoading.value = false;
+  }
 }
 
+async function handleLogout() {
+  await userStore.logout();
+}
 </script>
+
 <template>
   <div v-if="isLoading" class="d-flex justify-content-center align-items-center" style="height: 100vh;">
     <div class="spinner-border" role="status">

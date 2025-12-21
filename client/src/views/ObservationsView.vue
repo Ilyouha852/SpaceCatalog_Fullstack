@@ -1,30 +1,27 @@
 <script setup>
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import {computed, onBeforeMount, ref} from 'vue';
-import {useUserStore} from '@/stores/user_store';
-import {useDataStore} from '@/stores/data_store';
-import {storeToRefs} from "pinia";
-const userStore = useUserStore()
-const dataStore = useDataStore()
+import { computed, onBeforeMount, ref } from 'vue';
+import { useUserStore } from '@/stores/user_store';
+import { useDataStore } from '@/stores/data_store';
+import { storeToRefs } from 'pinia';
 
+const userStore = useUserStore();
+const dataStore = useDataStore();
+
+const { userInfo } = storeToRefs(userStore);
 const {
-    userInfo,
-} = storeToRefs(userStore)
+  researchers,
+  spaceObjects,
+  observations
+} = storeToRefs(dataStore);
 
-const {
-    researchers,
-    spaceObjects,
-    objectTypes,
-    astronomers,
-    observations
-} = storeToRefs(dataStore)
-
-const selectedResearcher = ref(null); 
 onBeforeMount(async () => {
-    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
-    await dataStore.fetchAllData()
-})
+  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+  await dataStore.fetchAllData();
+});
+
+const selectedResearcher = ref(null);
 
 const filteredObservations = computed(() => {
   if (!selectedResearcher.value) {
@@ -35,9 +32,22 @@ const filteredObservations = computed(() => {
 
 const observationsToAdd = ref({});
 
+const observationToEdit = ref({});
+
 async function onObservationAdd() {
-  await axios.post("/api/observations/", {
+  await axios.post('/api/observations/', {
     ...observationsToAdd.value,
+  });
+  await dataStore.fetchObservations();
+}
+
+async function onObservationEditClick(observation) {
+  observationToEdit.value = { ...observation };
+}
+
+async function onUpdateObservation() {
+  await axios.put(`/api/observations/${observationToEdit.value.id}/`, {
+    ...observationToEdit.value,
   });
   await dataStore.fetchObservations();
 }
@@ -46,18 +56,8 @@ async function onRemoveClickObservation(observation) {
   await axios.delete(`/api/observations/${observation.id}/`);
   await dataStore.fetchObservations();
 }
-
-const observationToEdit = ref({});
-async function onObservationEditClick(observation) {
-  observationToEdit.value = { ...observation };
-}
-async function onUpdateObservation() {
-  await axios.put(`/api/observations/${observationToEdit.value.id}/`, {
-    ...observationToEdit.value,
-  });
-  await dataStore.fetchObservations();
-}
 </script>
+
 <template>
         <div class="border p-5" v-if="userInfo && userInfo.is_authenticated">
           <div>

@@ -1,3 +1,90 @@
+<script setup>
+import { ref, watch } from 'vue'
+import axios from 'axios'
+import QRCode from 'qrcode'
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['close', 'verified'])
+
+const loading = ref(false)
+const verified = ref(false)
+const pinInput = ref('')
+const totpUrl = ref('')
+const qrcodeUrl = ref('')
+const error = ref('')
+
+watch(totpUrl, async (newUrl) => {
+  if (newUrl) {
+    try {
+      qrcodeUrl.value = await QRCode.toDataURL(newUrl)
+    } catch (err) {
+      console.error('Ошибка генерации QR-кода:', err)
+    }
+  }
+})
+
+async function requestTotpKey() {
+  loading.value = true
+  error.value = ''
+
+  try {
+    const response = await axios.get('/api/user/get_totp/')
+    if (response.data.success) {
+      totpUrl.value = response.data.url
+    } else {
+      error.value = response.data.error || 'Ошибка при запросе ключа TOTP'
+    }
+  } catch (err) {
+    error.value = err.response?.data?.error || 'Не удалось запросить TOTP ключ'
+    console.error('Ошибка запроса TOTP ключа:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function verifyCode() {
+  loading.value = true
+  error.value = ''
+
+  try {
+    const response = await axios.post('/api/user/verify_2fa/', {
+      pin: pinInput.value
+    })
+
+    if (response.data.success) {
+      verified.value = true
+      setTimeout(() => {
+        emit('verified')
+        closeModal()
+      }, 1500)
+    } else {
+      error.value = response.data.error || 'Неверный код'
+    }
+  } catch (err) {
+    error.value = err.response?.data?.error || 'Ошибка при проверке кода'
+    console.error('Ошибка верификации TOTP:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+function closeModal() {
+  verified.value = false
+  pinInput.value = ''
+  totpUrl.value = ''
+  qrcodeUrl.value = ''
+  error.value = ''
+
+  emit('close')
+}
+</script>
+
 <template>
   <div v-if="show" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5)">
     <div class="modal-dialog modal-dialog-centered">
@@ -88,97 +175,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, watch } from 'vue';
-import axios from 'axios';
-import QRCode from 'qrcode';
-
-const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false
-  }
-});
-
-const emit = defineEmits(['close', 'verified']);
-
-const loading = ref(false);
-const verified = ref(false);
-const pinInput = ref('');
-const totpUrl = ref('');
-const qrcodeUrl = ref('');
-const error = ref('');
-
-watch(totpUrl, async (newUrl) => {
-  if (newUrl) {
-    try {
-      qrcodeUrl.value = await QRCode.toDataURL(newUrl);
-    } catch (err) {
-      console.error('Error generating QR code:', err);
-    }
-  }
-});
-
-async function requestTotpKey() {
-  loading.value = true;
-  error.value = '';
-  
-  try {
-    const response = await axios.get('/api/user/get_totp/');
-    if (response.data.success) {
-      totpUrl.value = response.data.url;
-    } else {
-      error.value = response.data.error || 'Ошибка при запросе ключа';
-    }
-  } catch (err) {
-    error.value = err.response?.data?.error || 'Не удалось запросить TOTP ключ';
-    console.error('Error requesting TOTP key:', err);
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function verifyCode() {
-  loading.value = true;
-  error.value = '';
-  
-  try {
-    const response = await axios.post('/api/user/verify_2fa/', {
-      pin: pinInput.value
-    });
-    
-    if (response.data.success) {
-      verified.value = true;
-      setTimeout(() => {
-        emit('verified');
-        closeModal();
-      }, 1500);
-    } else {
-      error.value = response.data.error || 'Неверный код';
-    }
-  } catch (err) {
-    if (err.response?.data?.error) {
-      error.value = err.response.data.error;
-    } else {
-      error.value = 'Ошибка при проверке кода';
-    }
-    console.error('Error verifying TOTP code:', err);
-  } finally {
-    loading.value = false;
-  }
-}
-
-function closeModal() {
-  verified.value = false;
-  pinInput.value = '';
-  totpUrl.value = '';
-  qrcodeUrl.value = '';
-  error.value = '';
-  
-  emit('close');
-}
-</script>
 
 <style scoped>
 .modal.show {

@@ -1,99 +1,85 @@
 <script setup>
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import {computed, onBeforeMount, ref} from 'vue';
-import {useUserStore} from '@/stores/user_store';
-import {useDataStore} from '@/stores/data_store';
-import {storeToRefs} from "pinia";
-const userStore = useUserStore()
-const dataStore = useDataStore()
+import { onBeforeMount, ref } from 'vue';
+import { useUserStore } from '@/stores/user_store';
+import { useDataStore } from '@/stores/data_store';
+import { storeToRefs } from 'pinia';
 
-const {
-    userInfo,
-} = storeToRefs(userStore)
+const userStore = useUserStore();
+const dataStore = useDataStore();
 
-const {
-    researchers,
-    spaceObjects,
-    objectTypes,
-    astronomers,
-    observations
-} = storeToRefs(dataStore)
+const { userInfo } = storeToRefs(userStore);
+const { astronomers } = storeToRefs(dataStore);
 
 onBeforeMount(async () => {
-    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
-    await dataStore.fetchAllData()
-})
-
+  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+  await dataStore.fetchAllData();
+});
 
 const astronomerToAdd = ref({});
-
 const astronomerPictureRef = ref();
 const astronomerImageUrl = ref();
+
+const astronomerToEdit = ref({});
+const astronomerEditPictureRef = ref();
+const astronomerEditImageUrl = ref();
+
 async function astronomerAddPictureChange() {
-  astronomerImageUrl.value = URL.createObjectURL(astronomerPictureRef.value.files[0])
+  astronomerImageUrl.value = URL.createObjectURL(astronomerPictureRef.value.files[0]);
 }
+
 async function onAstronomerAdd() {
   const formData = new FormData();
   formData.append('picture', astronomerPictureRef.value.files[0]);
   formData.set('name', astronomerToAdd.value.name);
-  formData.set('bio', astronomerToAdd.value.bio)
-  await axios.post("/api/astronomers/",formData, {
+  formData.set('bio', astronomerToAdd.value.bio);
+
+  await axios.post('/api/astronomers/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   });
-  
+
   await dataStore.fetchAstronomers();
 }
-const astronomerToEdit = ref({});
-
-
-
-async function onRemoveClickAstronomer(astronomer) {
-  await axios.delete(`/api/astronomers/${astronomer.id}/`);
-  await dataStore.fetchAstronomers();
-}
-
-const astronomerEditPictureRef = ref();
-const astronomerEditImageUrl = ref();
-
-
-async function astronomerEditPictureChange() {
-  if (astronomerEditPictureRef.value.files[0]) {
-    astronomerEditImageUrl.value = URL.createObjectURL(astronomerEditPictureRef.value.files[0])
-  }
-}
-
 
 async function onAstronomerEditClick(astronomer) {
   astronomerToEdit.value = { ...astronomer };
-  astronomerEditImageUrl.value = null; 
+  astronomerEditImageUrl.value = null;
 }
 
+async function astronomerEditPictureChange() {
+  if (astronomerEditPictureRef.value.files[0]) {
+    astronomerEditImageUrl.value = URL.createObjectURL(astronomerEditPictureRef.value.files[0]);
+  }
+}
 
 async function onUpdateAstronomer() {
   const formData = new FormData();
-  
-  
+
   if (astronomerEditPictureRef.value.files[0]) {
     formData.append('picture', astronomerEditPictureRef.value.files[0]);
   }
-  
+
   formData.set('name', astronomerToEdit.value.name);
   formData.set('bio', astronomerToEdit.value.bio);
-  
+
   await axios.put(`/api/astronomers/${astronomerToEdit.value.id}/`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   });
-  
+
   await dataStore.fetchAstronomers();
 }
 
-
+async function onRemoveClickAstronomer(astronomer) {
+  await axios.delete(`/api/astronomers/${astronomer.id}/`);
+  await dataStore.fetchAstronomers();
+}
 </script>
+
 <template>
   
     <div v-if="userInfo && userInfo.is_authenticated">

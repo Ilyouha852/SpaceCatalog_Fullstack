@@ -19,13 +19,11 @@ import {
   ElTable,
   ElTableColumn,
   ElStatistic,
-  ElImageViewer,
   ElAlert,
   ElTag,
   ElRow,
   ElCol,
   ElDivider,
-  ElEmpty,
   ElBadge
 } from 'element-plus'
 
@@ -54,9 +52,6 @@ const twoFAStatus = ref({
 })
 const show2FAModal = ref(false)
 let twoFATimer = null
-
-const imageViewerVisible = ref(false)
-const currentImageUrl = ref('')
 
 onMounted(async () => {
   axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken')
@@ -191,8 +186,6 @@ const exportToExcel = (endpoint, filename) => {
 
 <template>
   <div class="container py-5">
-
-    <!-- Приветствие и 2FA статус -->
     <div v-if="userInfo?.is_authenticated" class="mb-4">
       <h3 class="mb-3">Здравствуй, {{ userInfo.username }}!</h3>
 
@@ -597,7 +590,7 @@ const exportToExcel = (endpoint, filename) => {
 
 .astronomer-bio p {
   margin-bottom: 0.5rem;
-  color: inherit; /* Fix dark text issue */
+  color: inherit;
 }
 
 .astronomer-bio p.collapsed {

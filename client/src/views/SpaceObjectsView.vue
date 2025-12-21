@@ -1,59 +1,25 @@
 <script setup>
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import {computed, onBeforeMount, ref} from 'vue';
-import {useUserStore} from '@/stores/user_store';
-import {useDataStore} from '@/stores/data_store';
-import {storeToRefs} from "pinia";
-const userStore = useUserStore()
-const dataStore = useDataStore()
+import { computed, onBeforeMount, ref } from 'vue';
+import { useUserStore } from '@/stores/user_store';
+import { useDataStore } from '@/stores/data_store';
+import { storeToRefs } from 'pinia';
 
-const {
-    userInfo,
-} = storeToRefs(userStore)
+const userStore = useUserStore();
+const dataStore = useDataStore();
 
+const { userInfo } = storeToRefs(userStore);
 const {
-    researchers,
-    spaceObjects,
-    objectTypes,
-    astronomers,
-    observations
-} = storeToRefs(dataStore)
+  spaceObjects,
+  objectTypes,
+  astronomers,
+} = storeToRefs(dataStore);
 
 onBeforeMount(async () => {
-    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
-    await dataStore.fetchAllData()
-})
-
-const researcherToAdd = ref({});
-const objectTypeToAdd = ref({});
-const astronomerToAdd = ref({});
-const spaceObjectsToAdd = ref({});
-const observationsToAdd = ref({});
-
-async function onSpaceObjectAdd() {
-  await axios.post("/api/spaceobjects/", {
-    ...spaceObjectsToAdd.value,
-  });
-  await dataStore.fetchSpaceObjects();
-}
-
-async function onRemoveClickSpaceObject(spaceObject) {
-  await axios.delete(`/api/spaceobjects/${spaceObject.id}/`);
-  await dataStore.fetchSpaceObjects();
-}
-
-
-const spaceObjectToEdit = ref({});
-async function onSpaceObjectEditClick(spaceObject) {
-  spaceObjectToEdit.value = { ...spaceObject };
-}
-async function onUpdateSpaceObject() {
-  await axios.put(`/api/spaceobjects/${spaceObjectToEdit.value.id}/`, {
-    ...spaceObjectToEdit.value,
-  });
-  await dataStore.fetchSpaceObjects();
-}
+  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+  await dataStore.fetchAllData();
+});
 
 const uniqueObjectTypes = computed(() => {
   const seen = new Set();
@@ -65,7 +31,35 @@ const uniqueObjectTypes = computed(() => {
     return true;
   });
 });
+
+const spaceObjectsToAdd = ref({});
+
+const spaceObjectToEdit = ref({});
+
+async function onSpaceObjectAdd() {
+  await axios.post('/api/spaceobjects/', {
+    ...spaceObjectsToAdd.value,
+  });
+  await dataStore.fetchSpaceObjects();
+}
+
+async function onSpaceObjectEditClick(spaceObject) {
+  spaceObjectToEdit.value = { ...spaceObject };
+}
+
+async function onUpdateSpaceObject() {
+  await axios.put(`/api/spaceobjects/${spaceObjectToEdit.value.id}/`, {
+    ...spaceObjectToEdit.value,
+  });
+  await dataStore.fetchSpaceObjects();
+}
+
+async function onRemoveClickSpaceObject(spaceObject) {
+  await axios.delete(`/api/spaceobjects/${spaceObject.id}/`);
+  await dataStore.fetchSpaceObjects();
+}
 </script>
+
 <template>
     <div class="border p-5" v-if="userInfo && userInfo.is_authenticated">
           <div class="mb-5" v-if="userInfo && userInfo.is_authenticated && userInfo.is_staff">

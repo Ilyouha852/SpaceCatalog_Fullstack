@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from django.conf import settings
 import os
 
-
 class ExcelExportMixin:
 
     @action(detail=False, methods=['get'], url_path='export_excel', url_name='export_excel')
