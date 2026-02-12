@@ -1,0 +1,57 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import PolyclinicsView from '@/views/PolyclinicsView.vue';
+import DoctorsView from '@/views/DoctorsView.vue';
+import PatientsView from '@/views/PatientsView.vue';
+import AppointmentsView from '@/views/AppointmentsView.vue';
+import MedicalRecordsView from '@/views/MedicalRecordsView.vue';
+import LoginView from '@/views/LoginView.vue';
+import StatisticsView from '@/views/StatisticView.vue';
+import SecondAuthView from '@/views/SecondAuthView.vue';
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: "/",
+      name: "PolyclinicsView",
+      component: PolyclinicsView,
+    },
+    {
+      path: "/login",
+      name: "Login",
+      component: LoginView
+    },
+    {
+      path: "/doctors",
+      name: "DoctorsView",
+      component: DoctorsView,
+    },
+    {
+      path: "/patients",
+      name: "PatientsView",
+      component: PatientsView,
+    },
+    {
+      path: "/appointments",
+      name: "AppointmentsView",
+      component: AppointmentsView,
+    },
+    {
+      path: "/medical-records",
+      name: "MedicalRecordsView",
+      component: MedicalRecordsView,
+    },
+    {
+      path: "/statistic",
+      name: "StatisticView",
+      component: StatisticsView,
+    },
+    {
+      path: "/second-auth",
+      name: "SecondAuth",
+      component: SecondAuthView,
+      meta: { requiresAuth: true }
+    },
+  ]
+})
+
+export default router

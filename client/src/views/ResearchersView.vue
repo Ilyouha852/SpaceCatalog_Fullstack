@@ -1,285 +1,344 @@
 <script setup>
-import axios from 'axios';
-import Cookies from 'js-cookie';
-import { onBeforeMount, ref } from 'vue';
-import { useUserStore } from '@/stores/user_store';
-import { useDataStore } from '@/stores/data_store';
-import { storeToRefs } from 'pinia';
+import { computed, onBeforeMount, ref } from "vue";
+import axios from "axios";
+import Cookies from "js-cookie";
+import { storeToRefs } from "pinia";
+import { useUserInfoStore } from "@/stores/user_info_store";  
 
-const userStore = useUserStore();
-const dataStore = useDataStore();
+const userInfoStore = useUserInfoStore();  
+const { is_superuser, is_authenticated, user_type } = storeToRefs(userInfoStore);  
 
-const { userInfo } = storeToRefs(userStore);
-const { researchers } = storeToRefs(dataStore);
-
-onBeforeMount(async () => {
-  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
-  await dataStore.fetchAllData();
+onBeforeMount(() => {
+  axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 });
 
+const loading = ref(false);
+const loadingExport = ref(false);
+
+const researchers = ref([]);
 const researcherToAdd = ref({});
-const researcherPictureRef = ref();
-const researcherImageUrl = ref();
-
 const researcherToEdit = ref({});
-const researcherEditPictureRef = ref();
-const researcherEditImageUrl = ref();
 
-async function researcherAddPictureChange() {
-  researcherImageUrl.value = URL.createObjectURL(researcherPictureRef.value.files[0]);
+const searchQuery = ref("");
+const searchPhone = ref("");
+const selectedBirthDate = ref("");
+
+const filteredResearchers = computed(() => {
+  if (!researchers.value.length) return [];
+
+  return researchers.value.filter(researcher => {
+
+    if (searchQuery.value) {
+      const researcherName = researcher.name?.toLowerCase() || '';
+      const query = searchQuery.value.toLowerCase();
+      
+      if (!researcherName.includes(query)) {
+        return false;
+      }
+    }
+
+    if (searchPhone.value) {
+      const phone = researcher.phone?.toLowerCase() || '';
+      const query = searchPhone.value.toLowerCase();
+      
+      if (!phone.includes(query)) {
+        return false;
+      }
+    }
+
+    if (selectedBirthDate.value && researcher.birth_date !== selectedBirthDate.value) {
+      return false;
+    }
+
+    return true;
+  });
+});
+
+const resetFilters = () => {
+  searchQuery.value = "";
+  searchPhone.value = "";
+  selectedBirthDate.value = "";
+};
+
+async function fetchResearchers() {
+  loading.value = true;
+  const r = await axios.get("/api/researchers/");
+  researchers.value = r.data;
+  loading.value = false;
 }
 
 async function onResearcherAdd() {
-  const formData = new FormData();
-
-  formData.set('first_name', researcherToAdd.value.first_name);
-  formData.set('last_name', researcherToAdd.value.last_name);
-  formData.set('email', researcherToAdd.value.email);
-  formData.set('card_number', researcherToAdd.value.card_number);
-
-  if (researcherPictureRef.value.files[0]) {
-    formData.append('picture', researcherPictureRef.value.files[0]);
-  }
-
-  await axios.post('/api/researchers/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+  await axios.post("/api/researchers/", {
+    ...researcherToAdd.value,
   });
-  await dataStore.fetchResearchers();
+  await fetchResearchers();
 }
 
-async function onResearcherEditClick(researcher) {
+async function OnResearcherEdit(researcher) {
   researcherToEdit.value = { ...researcher };
-  researcherEditImageUrl.value = null;
 }
 
-async function researcherEditPictureChange() {
-  if (researcherEditPictureRef.value.files[0]) {
-    researcherEditImageUrl.value = URL.createObjectURL(researcherEditPictureRef.value.files[0]);
+async function onResearcherUpdate() {
+  try {
+    await axios.put(`/api/researchers/${researcherToEdit.value.id}/`, {
+      ...researcherToEdit.value,
+    });
+    await fetchResearchers();
+  } catch (error) {
+    console.error("Ошибка при обновлении исследователя:", error);
+    alert("Ошибка при обновлении исследователя");
   }
 }
 
-async function onUpdateResearcher() {
-  const formData = new FormData();
-
-  if (researcherEditPictureRef.value.files[0]) {
-    formData.append('picture', researcherEditPictureRef.value.files[0]);
-  }
-
-  formData.set('first_name', researcherToEdit.value.first_name);
-  formData.set('last_name', researcherToEdit.value.last_name);
-  formData.set('email', researcherToEdit.value.email);
-  formData.set('card_number', researcherToEdit.value.card_number);
-
-  await axios.put(`/api/researchers/${researcherToEdit.value.id}/`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  });
-
-  await dataStore.fetchResearchers();
-}
-
-async function onRemoveClick(researcher) {
+async function OnResearcherRemove(researcher) {
   await axios.delete(`/api/researchers/${researcher.id}/`);
-  await dataStore.fetchResearchers();
+  await fetchResearchers();
+}
+
+onBeforeMount(async () => {
+  await fetchResearchers();
+});
+
+async function exportToExcel() {
+  loadingExport.value = true;
+  try {
+    const response = await axios.get('/api/researchers/export-excel/', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'researchers.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.error('Ошибка при экспорте:', e);
+    alert('Ошибка при экспорте данных');
+  } finally {
+    loadingExport.value = false;
+  }
 }
 </script>
 
 <template>
-  <div class="border p-5" v-if="userInfo && userInfo.is_authenticated">
-        <div class="mb-5" v-if="userInfo && userInfo.is_authenticated && userInfo.is_staff">
-          <h3>Добавить исследователя</h3>
-        <form @submit.prevent.stop="onResearcherAdd">
-            
-            <div class="row">
-                <div class="col">
-                <div class="form-floating">
-                    <!-- ТУТ ПОДКЛЮЧИЛ studentToAdd.name -->
+  <div class="container-fluid">
+      <div class="p-2">
+        <div v-if="is_authenticated">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h6 class="card-title mb-0">Фильтры</h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="bi bi-search"></i>
+                    </span>
                     <input
-                    type="text"
-                    class="form-control"
-                      v-model="researcherToAdd.first_name"
-                    required
-                    />
-                    <label for="floatingInput">Имя</label>
-                </div>
-                </div>
-                <div class="col">
-                <div class="form-floating">
-                    <!-- ТУТ ПОДКЛЮЧИЛ studentToAdd.name -->
-                    <input
-                    type="text"
-                    class="form-control"
-                      v-model="researcherToAdd.last_name"
-                    required
-                    />
-                    <label for="floatingInput">Фамилия</label>
-                </div>
-                </div>
-                <div class="col">
-                <div class="form-floating">
-                    <!-- ТУТ ПОДКЛЮЧИЛ studentToAdd.name -->
-                    <input
-                    type="email"
-                    class="form-control"
-                      v-model="researcherToAdd.email"
-                    required
-                    />
-                    <label for="floatingInput">Почта</label>
-                </div>
-                </div>
-                <div class="col">
-                <div class="form-floating">
-                    <!-- ТУТ ПОДКЛЮЧИЛ studentToAdd.name -->
-                    <input
-                    type="number"
-                    class="form-control"
-                      v-model="researcherToAdd.card_number"
-                    required
-                    />
-                      <label for="floatingInput">Номер исследователя</label>
-                </div>
-                </div>
-                <div class="col">
-                  <div class="form-floating">
-                      <input
-                      type="file"
+                      type="text"
                       class="form-control"
-                      ref="researcherPictureRef"
-                      @change="researcherAddPictureChange"
-                      
-                      />
-                      <label for="floatingInput">Фотография</label>
+                      v-model="searchQuery"
+                      placeholder="Поиск по имени..."
+                    />
                   </div>
-                  </div>
-                <div class="col-auto">
-                <button class="btn btn-primary" style="width: 100%;height: 100%;">
-                    Добавить 
-                </button>
                 </div>
-            </div>
-            <img :src="researcherImageUrl" style="max-width: 300px; margin-top:20px;border-radius:20px;"/>
-        </form>
-        </div>
-        <h4 v-if="userInfo && userInfo.is_authenticated && userInfo.is_staff" >Список исследователей</h4>
-        <h4 v-else-if="userInfo && userInfo.is_authenticated">Моя информация</h4>
-        <div class="row">
-            <template v-for="item in researchers">
-            <div class="col-3 p-3 border d-flex justify-content-between align-items-center flex-wrap">
-                    <div v-show="item.picture"><img :src="item.picture" style="max-width: 100%; border-radius: 20px; height: 300px; object-fit: cover; width:300px; margin-bottom:20px"></div>  {{ item.first_name }} 
-                
-                 <button class="btn btn-danger" @click="onRemoveClick(item)" v-if="userInfo && userInfo.is_authenticated && userInfo.is_staff">
-                    <i class="bi bi-x">x</i>
-                </button>
-                
-                <button style="flex:0 0 100%;"
-                    class="btn btn-success mt-2"
-                    @click="onResearcherEditClick(item)"
-                    data-bs-toggle="modal"
-                    data-bs-target="#editReaderModal">
-                    <span>Редактировать</span>
-                </button>
-            </div>
-            </template>
-        </div>
-        </div>
-        <div v-else>
-      <h2 class="mt-2">Пожалуйста, <a href="/">авторизуйтесь</a></h2>
-    </div>
-        <div class="modal fade" id="editReaderModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">
-           Редактировать
-          </h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="row">
-            <div class="col">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="researcherToEdit.first_name"
-                />
-                <label for="floatingInput">Имя</label>
-              </div>
-            </div>
-            <div class="col">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="researcherToEdit.last_name"
-                />
-                <label for="floatingInput">Фамилия</label>
-              </div>
-            </div>
-            <div class="col">
-              <div class="form-floating">
-                <input
-                  type="email"
-                  class="form-control"
-                  v-model="researcherToEdit.email"
-                />
-                <label for="floatingInput">Почта</label>
-              </div>
-            </div>
-            <div class="col">
-              <div class="form-floating">
-                <input
-                  type="number"
-                  class="form-control"
-                  v-model="researcherToEdit.card_number"
-                />
-                      <label for="floatingInput">Номер исследователя</label>
-              </div>
-            </div>
-            <div class="col-12 mt-3" v-if="researcherToEdit.picture">
-                <p>Текущее фото:</p>
-                <img :src="researcherToEdit.picture" style="max-width: 300px; border-radius: 10px; height: 200px; object-fit: cover; margin-bottom: 10px">
-            </div>
-            <div class="col-12 mt-3">
-              <div class="form-floating">
-                <input
-                  type="file"
-                  class="form-control"
-                  ref="researcherEditPictureRef"
-                  @change="researcherEditPictureChange"
-                />
-                <label for="floatingInput">Новое фото (оставьте пустым, чтобы не менять)</label>
+                <div class="col-md-2">
+                  <input
+                    type="date"
+                    class="form-control"
+                    v-model="selectedBirthDate"
+                    placeholder="Дата рождения"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="bi bi-telephone"></i>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      v-model="searchPhone"
+                      placeholder="Поиск по телефону..."
+                    />
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <button @click="resetFilters" class="btn btn-outline-secondary w-100">
+                    Сбросить
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-          <img v-if="researcherEditImageUrl" :src="researcherEditImageUrl" style="max-width: 200px; border-radius: 10px; height: 200px; object-fit: cover; margin-top: 10px">
+
+          <div v-if="is_superuser || user_type === 'admin' || userInfoStore.hasPermission('can_manage_patients')">
+            <form @submit.prevent.stop="onResearcherAdd">
+              <div class="row">
+                <div class="col">
+                  <div class="form-floating mb-3">
+                    <input
+                      type="text"
+                      class="form-control"
+                      v-model="researcherToAdd.name"
+                      required
+                    />
+                    <label for="floatingInput">ФИО исследователя</label>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <div class="form-floating mb-3">
+                    <input
+                      type="date"
+                      class="form-control"
+                      v-model="researcherToAdd.birth_date"
+                      required
+                    />
+                    <label for="floatingInput">Дата рождения</label>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <div class="form-floating mb-3">
+                    <input
+                      type="tel"
+                      class="form-control"
+                      v-model="researcherToAdd.phone"
+                      required
+                    />
+                    <label for="floatingInput">Телефон</label>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <button class="btn btn-primary">Добавить</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="mb-3">
+            <button @click="exportToExcel" class="btn btn-success" :disabled="loadingExport">
+              <i class="bi bi-file-earmark-excel"></i>
+              {{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}
+            </button>
+          </div>
+
+          <div>
+            <div v-for="item in filteredResearchers" :key="item.id" class="researcher-item">
+              <div>{{ item.name }}</div>
+              <div>{{ item.birth_date }}</div>
+              <div>{{ item.phone }}</div>
+              <button
+                v-if="is_superuser || user_type === 'admin' || userInfoStore.hasPermission('can_manage_patients')"
+                class="btn btn-sm btn-outline-secondary me-2"
+                @click="OnResearcherEdit(item)"
+                data-bs-toggle="modal"
+                data-bs-target="#editResearcherModal"
+              >
+                Редактировать
+              </button>
+              <button 
+                v-if="is_superuser || user_type === 'admin' || userInfoStore.hasPermission('can_manage_patients')"
+                class="btn btn-sm btn-danger" 
+                @click="OnResearcherRemove(item)"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal"
-          >
-            Close
-          </button>
-          <button
-            data-bs-dismiss="modal"
-            type="button"
-            class="btn btn-primary"
-            @click="onUpdateResearcher"
-          >
-            Сохранить
-          </button>
+        <div v-else>Вы не авторизованы</div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="editResearcherModal"
+      tabindex="-1"
+      aria-labelledby="editResearcherModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="editResearcherModalLabel">
+              Редактировать исследователя
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="form-floating">
+                  <input
+                    type="text"
+                    class="form-control"
+                    v-model="researcherToEdit.name"
+                    placeholder="ФИО исследователя"
+                  />
+                  <label>ФИО исследователя</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="form-floating">
+                  <input
+                    type="date"
+                    class="form-control"
+                    v-model="researcherToEdit.birth_date"
+                    placeholder="Дата рождения"
+                  />
+                  <label>Дата рождения</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="form-floating">
+                  <input
+                    type="tel"
+                    class="form-control"
+                    v-model="researcherToEdit.phone"
+                    placeholder="Телефон"
+                  />
+                  <label>Телефон</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Закрыть
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+              @click="onResearcherUpdate"
+            >
+              Сохранить изменения
+            </button>
+          </div>
         </div>
       </div>
     </div>
-</div>
+  </div>
 </template>
+
+<style lang="scss" scoped>
+.researcher-item {
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  border: 1px solid silver;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  gap: 16px;
+  align-items: center;
+  align-content: center;
+}
+</style>

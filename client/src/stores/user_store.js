@@ -1,57 +1,62 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { onBeforeMount, ref } from "vue";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 export const useUserStore = defineStore("userStore", () => {
     const userInfo = ref({
         is_authenticated: false,
-        isLoading: true
+        username: "",
+        is_staff: false,
+        is_superuser: false
     })
-
+    
     async function checkLogin() {
         try {
-            let r = await axios.get("/api/user/info/")
-            userInfo.value = r.data;
+            // Устанавливаем CSRF токен для всех запросов
+            axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
+            
+            let response = await axios.get("/api/user/info/")
+            userInfo.value = response.data;
         } catch (error) {
+            console.error("Check login error:", error);
             userInfo.value = {
-                is_authenticated: false
+                is_authenticated: false,
+                username: "",
+                is_staff: false,
+                is_superuser: false
             };
         }
     }
 
     async function login(username, password) {
         try {
-            console.log('Attempting login with:', { username });
-            const r = await axios.post("/api/user/login/", {
+            // Устанавливаем CSRF токен
+            axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
+            
+            let response = await axios.post("/api/user/login/", {
                 username: username,
                 password: password,
-            });
-            console.log('Login response:', r.data);
-            if (r.data.success) {
+            })
+            
+            if (response.status === 200) {
                 await checkLogin();
                 return { success: true };
-            } else {
-                userInfo.value = {
-                    is_authenticated: false,
-                    error: 'Invalid credentials'
-                };
-                return { success: false, error: 'Invalid credentials' };
             }
         } catch (error) {
-            console.error('Login error:', error.response?.data || error.message);
-            userInfo.value = {
-                is_authenticated: false,
-                error: error.response?.data?.detail || 'Failed to login'
-            };
-            return {
-                success: false,
-                error: error.response?.data?.detail || 'Failed to login'
+            console.error("Login error:", error);
+            return { 
+                success: false, 
+                error: error.response?.data?.message || "Ошибка авторизации" 
             };
         }
     }
 
     async function logout() {
         try {
+            // Устанавливаем CSRF токен
+            axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
+            
             await axios.post("/api/user/logout/");
         } catch (error) {
             console.error("Logout error:", error);
@@ -59,11 +64,16 @@ export const useUserStore = defineStore("userStore", () => {
             userInfo.value = {
                 is_authenticated: false,
                 username: "",
-                password: "",
-                is_staff: false
+                is_staff: false,
+                is_superuser: false
             };
         }
     }
+
+    // Проверяем авторизацию при инициализации store
+    onBeforeMount(async () => {
+        await checkLogin();
+    })
 
     return {
         userInfo,
