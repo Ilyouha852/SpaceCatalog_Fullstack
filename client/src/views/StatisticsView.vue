@@ -270,12 +270,7 @@ const canSeeStatistics = () => {
       </div>
     </div>
 
-    <div v-if="loading" class="text-center">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Загрузка...</span>
-      </div>
-      <p class="mt-2">Загрузка статистики...</p>
-    </div>
+    <div v-if="loading">Загрузка данных...</div>
 
     <div v-if="error" class="alert alert-danger text-center">
       {{ error }}

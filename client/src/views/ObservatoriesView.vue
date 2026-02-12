@@ -17,7 +17,7 @@ const loading = ref(false);
 const loadingExport = ref(false);  
 const observatories = ref([]);
 const observatoryToAdd = ref({});
-const observatoryToEdit = ref({});
+const observatoryToEdit = ref(null);
 
 const observatoryAddPictureRef = ref();
 const observatoryEditPictureRef = ref();
@@ -156,6 +156,7 @@ async function onObservatoryUpdate() {
       },
     });
     await fetchObservatories();
+    observatoryToEdit.value = null;
   } catch (error) {
     console.error("Ошибка при обновлении обсерватории:", error);
     alert("Ошибка при обновлении обсерватории");
@@ -334,7 +335,35 @@ function openImagePreviewModal(url) {
           </form>
         </div>
 
-        <div v-if="loading">Гружу...</div>
+        <div v-if="observatoryToEdit" class="card mb-3 p-3">
+          <h5>Редактировать обсерваторию</h5>
+          <div class="row g-2 align-items-start">
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="observatoryToEdit.name" placeholder="Название обсерватории" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="observatoryToEdit.address" placeholder="Адрес" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="observatoryToEdit.phone" placeholder="Телефон" />
+            </div>
+            <div class="col-md-3">
+              <input class="form-control" type="file" ref="observatoryEditPictureRef" @change="observatoryEditPictureChange" accept="image/*" />
+              <div v-if="getImageUrl(observatoryToEdit)" class="mt-2">
+                <img :src="getImageUrl(observatoryToEdit)" style="max-height:80px" class="img-thumbnail" />
+              </div>
+              <div v-if="observatoryEditImageUrl" class="mt-2">
+                <img :src="observatoryEditImageUrl" style="max-height:80px" class="img-thumbnail" />
+              </div>
+            </div>
+            <div class="col-12 mt-2 d-flex gap-2">
+              <button class="btn btn-primary" @click="onObservatoryUpdate">Сохранить</button>
+              <button class="btn btn-secondary" @click="observatoryToEdit = null">Отмена</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="loading">Загрузка данных...</div>
 
         <div class="mb-3">
           <button 
@@ -363,8 +392,6 @@ function openImagePreviewModal(url) {
               v-if="is_superuser || userInfoStore.isAdmin()"
               class="btn btn-sm btn-outline-secondary me-2"
               @click="OnObservatoryEdit(item)"
-              data-bs-toggle="modal"
-              data-bs-target="#editObservatoryModal"
             >
               Редактировать
             </button>
@@ -378,84 +405,30 @@ function openImagePreviewModal(url) {
           </div>
         </div>
 
-        <div
-          class="modal fade"
-          id="editObservatoryModal"
-          tabindex="-1"
-          aria-labelledby="editObservatoryModalLabel"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="modal-title fs-5" id="editObservatoryModalLabel">
-                  Редактировать обсерваторию
-                </h1>
-                <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                ></button>
+        <div v-if="observatoryToEdit" class="card mb-3 p-3">
+          <h5>Редактировать обсерваторию</h5>
+          <div class="row g-2 align-items-start">
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="observatoryToEdit.name" placeholder="Название обсерватории" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="observatoryToEdit.address" placeholder="Адрес" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="observatoryToEdit.phone" placeholder="Телефон" />
+            </div>
+            <div class="col-md-3">
+              <input class="form-control" type="file" ref="observatoryEditPictureRef" @change="observatoryEditPictureChange" accept="image/*" />
+              <div v-if="getImageUrl(observatoryToEdit)" class="mt-2">
+                <img :src="getImageUrl(observatoryToEdit)" style="max-height:80px" class="img-thumbnail" />
               </div>
-              <div class="modal-body">
-                <div class="row g-3">
-                  <div class="col-12">
-                    <div class="form-floating">
-                      <input type="text" class="form-control" v-model="observatoryToEdit.name" />
-                      <label>Название обсерватории</label>
-                    </div>
-                  </div>
-                  <div class="col-12">
-                    <div class="form-floating">
-                      <input type="text" class="form-control" v-model="observatoryToEdit.address" />
-                      <label>Адрес</label>
-                    </div>
-                  </div>
-                  <div class="col-12">
-                    <div class="form-floating">
-                      <input type="text" class="form-control" v-model="observatoryToEdit.phone" />
-                      <label>Телефон</label>
-                    </div>
-                  </div>
-                  <div class="col-12">
-                    <div class="mb-3">
-                      <label class="form-label">Изменить изображение</label>
-                      <input 
-                        class="form-control" 
-                        type="file" 
-                        ref="observatoryEditPictureRef" 
-                        @change="observatoryEditPictureChange"
-                        accept="image/*"
-                      >
-                      <div v-if="getImageUrl(observatoryToEdit)" class="mt-2">
-                        <p class="small text-muted mb-1">Текущее изображение:</p>
-                        <img 
-                          :src="getImageUrl(observatoryToEdit)" 
-                          :alt="observatoryToEdit.name"
-                          style="max-height: 100px;"
-                          class="img-thumbnail"
-                        >
-                      </div>
-                      <div v-if="observatoryEditImageUrl" class="mt-2">
-                        <p class="small text-muted mb-1">Новое изображение:</p>
-                        <img 
-                          :src="observatoryEditImageUrl" 
-                          alt="Новое изображение"
-                          style="max-height: 100px;"
-                          class="img-thumbnail"
-                        >
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div v-if="observatoryEditImageUrl" class="mt-2">
+                <img :src="observatoryEditImageUrl" style="max-height:80px" class="img-thumbnail" />
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <button data-bs-dismiss="modal" type="button" class="btn btn-primary" @click="onObservatoryUpdate">
-                  Сохранить изменения
-                </button>
-              </div>
+            </div>
+            <div class="col-12 mt-2 d-flex gap-2">
+              <button class="btn btn-primary" @click="onObservatoryUpdate">Сохранить</button>
+              <button class="btn btn-secondary" @click="observatoryToEdit = null">Отмена</button>
             </div>
           </div>
         </div>

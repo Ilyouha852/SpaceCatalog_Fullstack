@@ -1,6 +1,7 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, onBeforeMount } from 'vue';
 import axios from 'axios';
+import Cookies from 'js-cookie'
 import { useUserInfoStore } from '@/stores/user_info_store';
 import QRCode from 'qrcode'
 
@@ -39,15 +40,21 @@ function formatTime(seconds) {
 }
 
 async function onActivate() {
-    const response = await axios.post("/api/users/second-login/", {
-        key: key.value
-    });
-    
-    await userInfoStore.fetchUserInfo();
-  
-    if (response.data.expires_in) {
-        timeLeft.value = response.data.expires_in;
-        startTimer();
+    try {
+        const response = await axios.post("/api/users/second-login/", {
+            key: key.value
+        });
+
+        await userInfoStore.fetchUserInfo();
+
+        if (response.data.expires_in) {
+            timeLeft.value = response.data.expires_in;
+            startTimer();
+        }
+    } catch (err) {
+        const msg = err?.response?.data?.message || err.message || 'Ошибка при активации';
+        alert(msg);
+        console.error('Second factor activation failed:', err);
     }
 }
 
@@ -60,6 +67,10 @@ async function getTotpKey() {
 onMounted(() => {
     startTimer();
 });
+
+onBeforeMount(() => {
+    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken')
+})
 
 onUnmounted(() => {
     if (timerInterval.value) {

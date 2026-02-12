@@ -18,7 +18,7 @@ const loadingExport = ref(false);
 const astronomers = ref([]);
 const observatories = ref([]);
 const astronomerToAdd = ref({});
-const astronomerToEdit = ref({});
+const astronomerToEdit = ref(null);
 
 const astronomerAddPictureRef = ref();
 const astronomerEditPictureRef = ref();
@@ -150,6 +150,7 @@ async function onAstronomerUpdate() {
       },
     });
     await fetchAstronomers();
+    astronomerToEdit.value = null;
   } catch (error) {
     console.error("Ошибка при обновлении астронома:", error);
     alert("Ошибка при обновлении астронома");
@@ -330,7 +331,40 @@ function getImageUrl(astronomer) {
           </div>
         </form>
 
-        <div v-if="loading">Гружу...</div>
+        <div v-if="astronomerToEdit" class="card mb-3 p-3">
+          <h5>Редактировать астронома</h5>
+          <div class="row g-2 align-items-start">
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="astronomerToEdit.name" placeholder="ФИО астронома" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" class="form-control" v-model="astronomerToEdit.specialization" placeholder="Специализация" />
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" v-model="astronomerToEdit.observatory" required>
+                <option value="">-- выбрать обсерваторию --</option>
+                <option :key="p.id" :value="p.id" v-for="p in observatories">{{ p.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-2">
+                <input class="form-control" type="file" ref="astronomerEditPictureRef" @change="astronomerEditPictureChange" accept="image/*" />
+              </div>
+              <div v-if="getImageUrl(astronomerToEdit)">
+                <img :src="getImageUrl(astronomerToEdit)" style="max-height:80px" class="img-thumbnail" />
+              </div>
+              <div v-if="astronomerEditImageUrl">
+                <img :src="astronomerEditImageUrl" style="max-height:80px" class="img-thumbnail mt-2" />
+              </div>
+            </div>
+            <div class="col-12 mt-2 d-flex gap-2">
+              <button class="btn btn-primary" @click="onAstronomerUpdate">Сохранить</button>
+              <button class="btn btn-secondary" @click="astronomerToEdit = null">Отмена</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="loading">Загрузка данных...</div>
 
         <div class="mb-3">
           <button @click="exportToExcel" class="btn btn-success" :disabled="loadingExport">
@@ -355,8 +389,6 @@ function getImageUrl(astronomer) {
               v-if="is_superuser || user_type === 'admin' || userInfoStore.hasPermission('can_manage_astronomers') || userInfoStore.hasPermission('can_manage_doctors')"
               class="btn btn-sm btn-outline-secondary me-2"
               @click="OnAstronomerEdit(item)"
-              data-bs-toggle="modal"
-              data-bs-target="#editAstronomerModal"
             >
               Редактировать
             </button>
@@ -381,114 +413,35 @@ function getImageUrl(astronomer) {
       <div v-else>Вы не авторизованы</div>
     </div>
 
-    <div
-      class="modal fade"
-      id="editAstronomerModal"
-      tabindex="-1"
-      aria-labelledby="editAstronomerModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="editAstronomerModalLabel">
-              Редактировать астронома
-            </h1>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+    <div v-if="astronomerToEdit" class="card mb-3 p-3">
+      <h5>Редактировать астронома</h5>
+      <div class="row g-2 align-items-start">
+        <div class="col-md-3">
+          <input type="text" class="form-control" v-model="astronomerToEdit.name" placeholder="ФИО астронома" />
+        </div>
+        <div class="col-md-3">
+          <input type="text" class="form-control" v-model="astronomerToEdit.specialization" placeholder="Специализация" />
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" v-model="astronomerToEdit.observatory" required>
+            <option value="">-- выбрать обсерваторию --</option>
+            <option :key="p.id" :value="p.id" v-for="p in observatories">{{ p.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-2">
+            <input class="form-control" type="file" ref="astronomerEditPictureRef" @change="astronomerEditPictureChange" accept="image/*" />
           </div>
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="astronomerToEdit.name"
-                    placeholder="ФИО астронома"
-                  />
-                  <label>ФИО астронома</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="astronomerToEdit.specialization"
-                    placeholder="Специализация"
-                  />
-                  <label>Специализация</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <select
-                    class="form-select"
-                    v-model="astronomerToEdit.observatory"
-                    required
-                  >
-                    <option value="" disabled selected>Выберите обсерваторию</option>
-                    <option :key="p.id" :value="p.id" v-for="p in observatories">
-                      {{ p.name }}
-                    </option>
-                  </select>
-                  <label>Обсерватория</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="mb-3">
-                  <label class="form-label">Изменить изображение</label>
-                  <input 
-                    class="form-control" 
-                    type="file" 
-                    ref="astronomerEditPictureRef" 
-                    @change="astronomerEditPictureChange"
-                    accept="image/*"
-                  >
-                  <div v-if="getImageUrl(astronomerToEdit)" class="mt-2">
-                    <p class="small text-muted mb-1">Текущее изображение:</p>
-                    <img 
-                      :src="getImageUrl(astronomerToEdit)" 
-                      :alt="astronomerToEdit.name"
-                      style="max-height: 100px;"
-                      class="img-thumbnail"
-                    >
-                  </div>
-                  <div v-if="astronomerEditImageUrl" class="mt-2">
-                    <p class="small text-muted mb-1">Новое изображение:</p>
-                    <img 
-                      :src="astronomerEditImageUrl" 
-                      alt="Новое изображение"
-                      style="max-height: 100px;"
-                      class="img-thumbnail"
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div v-if="getImageUrl(astronomerToEdit)">
+            <img :src="getImageUrl(astronomerToEdit)" style="max-height:80px" class="img-thumbnail" />
           </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Закрыть
-            </button>
-            <button
-              data-bs-dismiss="modal"
-              type="button"
-              class="btn btn-primary"
-              @click="onAstronomerUpdate"
-            >
-              Сохранить изменения
-            </button>
+          <div v-if="astronomerEditImageUrl">
+            <img :src="astronomerEditImageUrl" style="max-height:80px" class="img-thumbnail mt-2" />
           </div>
+        </div>
+        <div class="col-12 mt-2 d-flex gap-2">
+          <button class="btn btn-primary" @click="onAstronomerUpdate">Сохранить</button>
+          <button class="btn btn-secondary" @click="astronomerToEdit = null">Отмена</button>
         </div>
       </div>
     </div>

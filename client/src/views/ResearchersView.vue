@@ -17,7 +17,7 @@ const loadingExport = ref(false);
 
 const researchers = ref([]);
 const researcherToAdd = ref({});
-const researcherToEdit = ref({});
+const researcherToEdit = ref(null);
 
 const searchQuery = ref("");
 const searchPhone = ref("");
@@ -84,6 +84,7 @@ async function onResearcherUpdate() {
       ...researcherToEdit.value,
     });
     await fetchResearchers();
+    researcherToEdit.value = null;
   } catch (error) {
     console.error("Ошибка при обновлении исследователя:", error);
     alert("Ошибка при обновлении исследователя");
@@ -215,6 +216,27 @@ async function exportToExcel() {
             </form>
           </div>
 
+          <div v-if="researcherToEdit" class="card mb-3 p-3">
+            <h5>Редактировать исследователя</h5>
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <input type="text" class="form-control" v-model="researcherToEdit.name" placeholder="ФИО исследователя" />
+              </div>
+              <div class="col-md-3">
+                <input type="date" class="form-control" v-model="researcherToEdit.birth_date" />
+              </div>
+              <div class="col-md-3">
+                <input type="tel" class="form-control" v-model="researcherToEdit.phone" />
+              </div>
+              <div class="col-md-2 d-flex gap-2">
+                <button class="btn btn-primary" @click="onResearcherUpdate">Сохранить</button>
+                <button class="btn btn-secondary" @click="researcherToEdit = null">Отмена</button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="loading">Загрузка данных...</div>
+
           <div class="mb-3">
             <button @click="exportToExcel" class="btn btn-success" :disabled="loadingExport">
               <i class="bi bi-file-earmark-excel"></i>
@@ -231,8 +253,6 @@ async function exportToExcel() {
                 v-if="is_superuser || user_type === 'admin' || userInfoStore.hasPermission('can_manage_patients')"
                 class="btn btn-sm btn-outline-secondary me-2"
                 @click="OnResearcherEdit(item)"
-                data-bs-toggle="modal"
-                data-bs-target="#editResearcherModal"
               >
                 Редактировать
               </button>
@@ -249,80 +269,21 @@ async function exportToExcel() {
         <div v-else>Вы не авторизованы</div>
     </div>
 
-    <div
-      class="modal fade"
-      id="editResearcherModal"
-      tabindex="-1"
-      aria-labelledby="editResearcherModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="editResearcherModalLabel">
-              Редактировать исследователя
-            </h1>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="researcherToEdit.name"
-                    placeholder="ФИО исследователя"
-                  />
-                  <label>ФИО исследователя</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="date"
-                    class="form-control"
-                    v-model="researcherToEdit.birth_date"
-                    placeholder="Дата рождения"
-                  />
-                  <label>Дата рождения</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="tel"
-                    class="form-control"
-                    v-model="researcherToEdit.phone"
-                    placeholder="Телефон"
-                  />
-                  <label>Телефон</label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Закрыть
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              data-bs-dismiss="modal"
-              @click="onResearcherUpdate"
-            >
-              Сохранить изменения
-            </button>
-          </div>
+    <div v-if="researcherToEdit" class="card mb-3 p-3">
+      <h5>Редактировать исследователя</h5>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <input type="text" class="form-control" v-model="researcherToEdit.name" placeholder="ФИО исследователя" />
+        </div>
+        <div class="col-md-3">
+          <input type="date" class="form-control" v-model="researcherToEdit.birth_date" />
+        </div>
+        <div class="col-md-3">
+          <input type="tel" class="form-control" v-model="researcherToEdit.phone" />
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button class="btn btn-primary" @click="onResearcherUpdate">Сохранить</button>
+          <button class="btn btn-secondary" @click="researcherToEdit = null">Отмена</button>
         </div>
       </div>
     </div>

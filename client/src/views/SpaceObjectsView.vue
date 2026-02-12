@@ -114,7 +114,7 @@ async function exportToExcel() {
         </button>
       </div>
 
-      <div v-if="loading">Гружу...</div>
+      <div v-if="loading">Загрузка данных...</div>
 
       <div v-else>
         <div v-if="is_superuser || userInfoStore.isAdmin()" class="mb-3">

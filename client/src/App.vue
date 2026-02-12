@@ -31,7 +31,7 @@ async function onLogout() {
   <div>
     <nav class="navbar navbar-expand-sm navbar-dark bg-primary">
       <div class="container">
-        <a class="navbar-brand" href="#">SpaceКаталог</a>
+        <a class="navbar-brand" href="#">Космический справочник</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown">
           <span class="navbar-toggler-icon"></span>
         </button>

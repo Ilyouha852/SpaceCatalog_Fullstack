@@ -18,7 +18,7 @@ const observations = ref([]);
 const astronomers = ref([]);
 const researchers = ref([]);
 const observationToAdd = ref({});
-const observationToEdit = ref({});
+const observationToEdit = ref(null);
 
 const searchQuery = ref("");
 
@@ -86,6 +86,7 @@ async function onObservationUpdate() {
       ...observationToEdit.value,
     });
     await fetchObservations();
+    observationToEdit.value = null;
   } catch (error) {
     console.error("Ошибка при обновлении наблюдения:", error);
     alert("Ошибка при обновлении наблюдения");
@@ -244,11 +245,49 @@ const getResearcherName = (researcherId) => {
           </div>
         </form>
 
+        <div v-if="observationToEdit" class="card mb-3 p-3">
+          <h5>Редактировать наблюдение</h5>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <select class="form-select" v-model="observationToEdit.astronomer" required>
+                <option value="">-- выбрать астронома --</option>
+                <option :key="d.id" :value="d.id" v-for="d in astronomers">{{ d.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" v-model="observationToEdit.researcher" required>
+                <option value="">-- выбрать исследователя --</option>
+                <option :key="p.id" :value="p.id" v-for="p in researchers">{{ p.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <input type="datetime-local" class="form-control" v-model="observationToEdit.date_time" required />
+            </div>
+            <div class="col-md-2">
+              <select class="form-select" v-model="observationToEdit.status" required>
+                <option value="">-- выбрать статус --</option>
+                <option value="pending">Ожидание</option>
+                <option value="planned">Запланировано</option>
+                <option value="completed">Завершено</option>
+                <option value="cancelled">Отменено</option>
+              </select>
+            </div>
+            <div class="col-md-1">
+              <button class="btn btn-success w-100" @click="onObservationUpdate">Сохранить</button>
+            </div>
+            <div class="col-md-1">
+              <button class="btn btn-secondary w-100" @click="observationToEdit = null">Отмена</button>
+            </div>
+          </div>
+        </div>
+
         <div class="mb-3">
           Всего записей: {{ observations.length }}
           <span v-if="searchQuery"> | Найдено: {{ filteredObservations.length }}</span>
         </div>
 
+        <div v-if="loading">Загрузка данных...</div>
+        
         <div class="mb-3">
           <button @click="exportToExcel" class="btn btn-success" :disabled="loadingExport">
             <i class="bi bi-file-earmark-excel"></i>
@@ -271,8 +310,6 @@ const getResearcherName = (researcherId) => {
               v-if="canCreateObservations"
               class="btn btn-sm btn-outline-secondary me-2"
               @click="OnObservationEdit(item)"
-              data-bs-toggle="modal"
-              data-bs-target="#editObservationModal"
             >
               Редактировать
             </button>
@@ -293,104 +330,38 @@ const getResearcherName = (researcherId) => {
       <div v-else>Вы не авторизованы</div>
     </div>
 
-    <div
-      class="modal fade"
-      id="editObservationModal"
-      tabindex="-1"
-      aria-labelledby="editObservationModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="editObservationModalLabel">
-              Редактировать наблюдение
-            </h1>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="form-floating">
-                  <select
-                    class="form-select"
-                    v-model="observationToEdit.astronomer"
-                    required
-                  >
-                    <option value="" disabled selected>Выберите астронома</option>
-                    <option :key="d.id" :value="d.id" v-for="d in astronomers">
-                      {{ d.name }}
-                    </option>
-                  </select>
-                  <label>Астроном</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <select
-                    class="form-select"
-                    v-model="observationToEdit.researcher"
-                    required
-                  >
-                    <option value="" disabled selected>Выберите исследователя</option>
-                    <option :key="p.id" :value="p.id" v-for="p in researchers">
-                      {{ p.name }}
-                    </option>
-                  </select>
-                  <label>Исследователь</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <input
-                    type="datetime-local"
-                    class="form-control"
-                    v-model="observationToEdit.date_time"
-                    required
-                  />
-                  <label>Дата и время</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="form-floating">
-                  <select
-                    class="form-select"
-                    v-model="observationToEdit.status"
-                    required
-                  >
-                    <option value="" disabled selected>Выберите статус</option>
-                    <option value="pending">Ожидание</option>
-                    <option value="planned">Запланировано</option>
-                    <option value="completed">Завершено</option>
-                    <option value="cancelled">Отменено</option>
-                  </select>
-                  <label>Статус</label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Закрыть
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              data-bs-dismiss="modal"
-              @click="onObservationUpdate"
-            >
-              Сохранить изменения
-            </button>
-          </div>
+    <div v-if="observationToEdit" class="card mb-3 p-3">
+      <h5>Редактировать наблюдение</h5>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <select class="form-select" v-model="observationToEdit.astronomer" required>
+            <option value="">-- выбрать астронома --</option>
+            <option :key="d.id" :value="d.id" v-for="d in astronomers">{{ d.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" v-model="observationToEdit.researcher" required>
+            <option value="">-- выбрать исследователя --</option>
+            <option :key="p.id" :value="p.id" v-for="p in researchers">{{ p.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <input type="datetime-local" class="form-control" v-model="observationToEdit.date_time" required />
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" v-model="observationToEdit.status" required>
+            <option value="">-- выбрать статус --</option>
+            <option value="pending">Ожидание</option>
+            <option value="planned">Запланировано</option>
+            <option value="completed">Завершено</option>
+            <option value="cancelled">Отменено</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button class="btn btn-success w-100" @click="onObservationUpdate">Сохранить</button>
+        </div>
+        <div class="col-md-1">
+          <button class="btn btn-secondary w-100" @click="observationToEdit = null">Отмена</button>
         </div>
       </div>
     </div>

@@ -11,123 +11,63 @@ from observatory.models import Observatory, Astronomer, Researcher, Observation,
 class Command(BaseCommand):
     def handle(self, *args, **options):
         fake = Faker(['ru_RU'])
-        
-       
-        superuser = User.objects.filter(is_superuser=True).first()
-        
-        # Генерируем обсерватории
-        observatories_data = [
-            "Центральная городская обсерватория",
-            "Обсерватория №1", 
-            "Обсерватория №2",
-            "Детская обсерватория",
-            "Солнечная обсерватория",
-            "Клиническая обсерватория",
-            "Районная обсерватория",
-            "Городская обсерватория №1",
-            "Научный центр", 
-            "Обсерватория исследований"
+
+        # Create 1000 observatories, one astronomer per observatory, and one space object per astronomer
+        total = 1000
+        object_types = [
+            "Комета", "Астероид", "Планета", "Звезда", "Туманность", "Экзопланета"
         ]
-        
-        for name in observatories_data:
+
+        observatory_qs = []
+        astronomer_qs = []
+
+        for i in range(total):
             obs = Observatory.objects.create(
-                name=name,
+                name=fake.company(),
                 address=fake.street_address(),
                 phone=fake.phone_number()
             )
-            # Attach a random image from media/observatories if available
-            try:
-                media_dir = os.path.join(str(settings.MEDIA_ROOT), 'observatories')
-                files = [f for f in os.listdir(media_dir) if not f.startswith('.')]
-                if files:
-                    chosen = random.choice(files)
-                    file_path = os.path.join(media_dir, chosen)
-                    with open(file_path, 'rb') as imgf:
-                        obs.picture.save(chosen, File(imgf), save=True)
-            except Exception:
-                pass
-        
-        # Генерируем астрономов
-        for i in range(100):
+            observatory_qs.append(obs)
+
+            # create user for astronomer
             username = f"astronomer_{i+1}"
             user = User.objects.create_user(username, fake.email(), 'astronomer123')
             user.is_staff = True
             user.save()
-            
-            random_observatory = random.choice(Observatory.objects.all())
+
             astronomer = Astronomer.objects.create(
                 user=user,
-                name=f"{fake.last_name()} {fake.first_name()} {fake.middle_name()}",
-                research_field=random.choice([
-                    "Астрономическая физика", "Планетология", "Космология", "Радиоастрономия",
-                    "Оптическая астрономия", "Инструментальная астрофизика"
-                ]),
-                observatory=random_observatory
+                name=fake.name(),
+                research_field=fake.job(),
+                observatory=obs
             )
-            # Attach a random image from media/astronomers if available
-            try:
-                media_dir = os.path.join(str(settings.MEDIA_ROOT), 'astronomers')
-                files = [f for f in os.listdir(media_dir) if not f.startswith('.')]
-                if files:
-                    chosen = random.choice(files)
-                    file_path = os.path.join(media_dir, chosen)
-                    with open(file_path, 'rb') as imgf:
-                        astronomer.picture.save(chosen, File(imgf), save=True)
-            except Exception:
-                pass
+            astronomer_qs.append(astronomer)
 
-        for i in range(1000):
+            # create one space object for this astronomer
+            SpaceObject.objects.create(
+                name=f"{fake.word().capitalize()}-{i+1}",
+                object_type=random.choice(object_types),
+                astronomer=astronomer
+            )
+
+        # Create 1000 researchers and one observation for each, linking to corresponding astronomer
+        for i in range(total):
             username = f"researcher_{i+1}"
             user = User.objects.create_user(username, fake.email(), 'researcher123')
             user.save()
-            
+
             researcher = Researcher.objects.create(
                 user=user,
-                name=f"{fake.last_name()} {fake.first_name()} {fake.middle_name()}",
+                name=fake.name(),
                 birth_date=fake.date_of_birth(minimum_age=18, maximum_age=80),
                 phone=fake.phone_number()
             )
-            # Attach a random image from media/researchers if available
-            try:
-                media_dir = os.path.join(str(settings.MEDIA_ROOT), 'researchers')
-                files = [f for f in os.listdir(media_dir) if not f.startswith('.')]
-                if files:
-                    chosen = random.choice(files)
-                    file_path = os.path.join(media_dir, chosen)
-                    with open(file_path, 'rb') as imgf:
-                        researcher.picture.save(chosen, File(imgf), save=True)
-            except Exception:
-                pass
-            # Attach a random image from media/researchers if available
-            try:
-                media_dir = os.path.join(str(settings.MEDIA_ROOT), 'researchers')
-                files = [f for f in os.listdir(media_dir) if not f.startswith('.')]
-                if files:
-                    chosen = random.choice(files)
-                    file_path = os.path.join(media_dir, chosen)
-                    with open(file_path, 'rb') as imgf:
-                        researcher.picture.save(chosen, File(imgf), save=True)
-            except Exception:
-                pass
 
-        for _ in range(1000):
-            random_astronomer = random.choice(Astronomer.objects.all())
-            random_researcher = random.choice(Researcher.objects.all())
-            
+            # create one observation linking this researcher to the astronomer with same index
             Observation.objects.create(
-                astronomer=random_astronomer,
-                researcher=random_researcher,
-                user=getattr(random_researcher, 'user', None),
+                astronomer=astronomer_qs[i],
+                researcher=researcher,
+                user=user,
                 date_time=fake.date_time_between(start_date='-30d', end_date='+30d'),
                 status=random.choice(['pending', 'planned', 'completed', 'cancelled'])
-            )
-
-        # Create one SpaceObject per astronomer and link it
-        object_types = ["Комета", "Астероид", "Планета", "Звезда", "Туманность", "Экзопланета"]
-        for astronomer in Astronomer.objects.all():
-            name = f"{fake.word().capitalize()}-{astronomer.id}"
-            SpaceObject.objects.create(
-                name=name,
-                object_type=random.choice(object_types),
-                astronomer=astronomer
             )
