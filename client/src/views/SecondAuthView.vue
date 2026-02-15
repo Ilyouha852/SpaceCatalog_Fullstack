@@ -83,59 +83,36 @@ watch(totpUrl, async () => {
 })
 </script>
 
-<template> 
-    <div class="second-auth-container">
-        <h2 class="title">Двухфакторная аутентификация</h2>
+<template>
+    <el-card class="second-auth-container">
+        <template #header><h2 class="title">Двухфакторная аутентификация</h2></template>
+
         <div v-if="userInfoStore.second" class="status-section">
             <div v-if="timeLeft > 0" class="time-indicator">
-                <div class="time-badge">
-                    <span class="time-icon">⏰</span>
-                    Действует еще: {{ formatTime(timeLeft) }}
-                </div>
-                <div class="progress-bar">
-                    <div 
-                        class="progress-fill" 
-                        :style="{ width: ((timeLeft / 60) * 100) + '%' }"
-                    ></div>
-                </div>
+                <div class="time-badge">⏰ Действует еще: {{ formatTime(timeLeft) }}</div>
+                <el-progress :percentage="(timeLeft / 60) * 100" :stroke-width="8" />
             </div>
         </div>
 
         <div v-else class="input-group">
-            <input 
-                type="text" 
-                v-model="key"
-                placeholder="Введите 6-значный код"
-                class="code-input"
-                maxlength="6"
-            >
-            <button 
-                @click="onActivate" 
-                class="activate-btn"
-                :disabled="!key || key.length !== 6"
-            >
-                Активировать второй фактор
-            </button>
+            <el-input v-model="key" maxlength="6" placeholder="Введите 6-значный код" style="flex:1" />
+            <el-button @click="onActivate" :disabled="!key || key.length !== 6" type="primary">Активировать второй фактор</el-button>
         </div>
 
         <div class="button-group">
-            <button @click="getTotpKey" class="key-btn">
-                Запросить ключ
-            </button>
+            <el-button @click="getTotpKey" type="success">Запросить ключ</el-button>
         </div>
-   
+
         <div class="url-display" v-if="totpUrl">
             <h3>Ссылка для настройки:</h3>
             <div class="url-content">{{ totpUrl }}</div>
         </div>
-        
+
         <div class="qr-container" v-if="qrcodeUrl">
             <h3>QR-код:</h3>
-            <img :src="qrcodeUrl" alt="QR Code" class="qr-image">
+            <img :src="qrcodeUrl" alt="QR Code" style="width:200px; height:200px" />
         </div>
-        
-        
-    </div>
+    </el-card>
 </template>
 
 <style scoped>

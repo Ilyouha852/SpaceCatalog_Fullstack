@@ -28,124 +28,85 @@ async function onLogout() {
 </script>
 
 <template>
-  <div>
-    <nav class="navbar navbar-expand-sm navbar-dark bg-primary">
-      <div class="container">
-        <a class="navbar-brand" href="#">Космический справочник</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown">
-          <span class="navbar-toggler-icon"></span>
-        </button>
+  <el-container>
+    <el-header height="64px">
+      <div class="header-row">
+        <div class="brand">Космический справочник</div>
 
-        <div class="collapse navbar-collapse justify-content-between" id="navbarNavDropdown">
-          <ul class="navbar-nav">
-            <li class="nav-item">
-              <router-link class="nav-link" to="/">Обсерватории</router-link>
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/astronomers">Астрономы</router-link>
-            </li>
-            <li class="nav-item" v-if="is_superuser || user_type === 'admin' || user_type === 'astronomer' || userInfoStore.hasPermission('can_manage_researchers')">
-              <router-link class="nav-link" to="/researchers">Исследователи</router-link>
-            </li>
-            <li class="nav-item" v-if="is_authenticated">
-              <router-link class="nav-link" to="/observations">Наблюдения</router-link>
-            </li>
-            <li class="nav-item" v-if="is_authenticated">
-              <router-link class="nav-link" to="/space-objects">Космические объекты</router-link>
-            </li>
-            <li class="nav-item" v-if="userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.isAdmin()">
-              <router-link class="nav-link" to="/statistics">Статистика</router-link>
-            </li>
-            <li class="nav-item" v-if="is_authenticated">
-              <router-link class="nav-link" to="/second-auth">
-                <i class="bi bi-shield-check me-1"></i>
-                2FA
-              </router-link>
-            </li>
-          </ul>
-          
-          <ul class="navbar-nav">
-            <li class="nav-item" v-if="is_authenticated">
-              <div class="d-flex align-items-center" style="gap: 10px;">
-                <span class="navbar-text text-light">{{ username }}</span>
-                
-                <span v-if="userInfoStore.second" class="badge bg-success">
-    <i class="bi bi-shield-check me-1"></i>
-    
-</span>
+        <el-menu class="nav-menu" mode="horizontal" router>
+          <el-menu-item index="/">
+            <router-link to="/">Обсерватории</router-link>
+          </el-menu-item>
+          <el-menu-item index="/astronomers">
+            <router-link to="/astronomers">Астрономы</router-link>
+          </el-menu-item>
+          <el-menu-item v-if="is_superuser || user_type === 'admin' || user_type === 'astronomer' || userInfoStore.hasPermission('can_manage_researchers')" index="/researchers">
+            <router-link to="/researchers">Исследователи</router-link>
+          </el-menu-item>
+          <el-menu-item v-if="is_authenticated" index="/observations">
+            <router-link to="/observations">Наблюдения</router-link>
+          </el-menu-item>
+          <el-menu-item v-if="is_authenticated" index="/space-objects">
+            <router-link to="/space-objects">Космические объекты</router-link>
+          </el-menu-item>
+          <el-menu-item v-if="userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.isAdmin()" index="/statistics">
+            <router-link to="/statistics">Статистика</router-link>
+          </el-menu-item>
+          <el-menu-item v-if="is_authenticated" index="/second-auth">
+            <router-link to="/second-auth">2FA</router-link>
+          </el-menu-item>
+        </el-menu>
 
-                
-                <button class="btn btn-outline-light btn-sm" @click="onLogout">
-                  <i class="bi bi-box-arrow-right me-1"></i>
-                  Выйти
-                </button>
-              </div>
-            </li>
-            
-            <li class="nav-item" v-if="!is_authenticated">
-              <router-link class="nav-link" to="/login">
-                <button class="btn btn-outline-light" type="button">
-                  <i class="bi bi-box-arrow-in-right me-1"></i>
-                  Войти
-                </button>
-              </router-link>
-            </li>
-          </ul>
+        <div class="user-area">
+          <div v-if="is_authenticated" class="user-info">
+            <el-badge v-if="userInfoStore.second" type="success">
+              <span class="badge-placeholder" />
+            </el-badge>
+            <span class="username">{{ username }}</span>
+            <el-button size="small" type="warning" plain @click="onLogout">Выйти</el-button>
+          </div>
+          <div v-else>
+            <router-link to="/login">
+              <el-button type="primary" plain>Войти</el-button>
+            </router-link>
+          </div>
         </div>
       </div>
-    </nav>
-    
-    <div class="container">
-      <router-view />
-    </div>
-  </div>
+    </el-header>
+
+    <el-main>
+      <div class="main-container">
+        <router-view />
+      </div>
+    </el-main>
+  </el-container>
 </template>
 
 <style scoped>
-.navbar {
-  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
 }
 
-.nav-link {
-  color: rgba(255, 255, 255, 0.85) !important;
-  transition: color 0.2s;
+.brand {
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
-.nav-link:hover {
-  color: white !important;
+.nav-menu {
+  flex: 1 1 auto;
+  margin-left: 20px;
 }
 
-.btn-outline-light {
-  border-color: rgba(255, 255, 255, 0.5);
-  color: white;
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.btn-outline-light:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: white;
-}
-
-.container {
-  margin-top: 20px;
-}
-
-.badge {
-  font-size: 0.75em;
-  padding: 0.25em 0.5em;
-}
-
-@media (max-width: 992px) {
-  .navbar-collapse {
-    text-align: center;
-  }
-  
-  .nav-item {
-    margin: 5px 0;
-  }
-  
-  .d-flex.align-items-center {
-    flex-direction: column;
-    gap: 10px;
-  }
+.main-container {
+  padding: 16px;
 }
 </style>

@@ -32,12 +32,27 @@ async function onLoginFormSubmit() {
 </script>
 
 <template>
-    <form @submit.stop.prevent="onLoginFormSubmit" class="form d-flex flex-column p-3"
-        style="gap: 8px">
-        <input placeholder="логин" class="form-control" type="text" v-model="username">
-        <input placeholder="пароль" class="form-control" type="password" v-model="password">
-        <button class="btn btn-info">Войти</button>
-    </form>
+  <div class="login-form">
+    <el-form label-position="top" @submit.prevent="onLoginFormSubmit">
+      <el-form-item>
+        <el-input v-model="username" placeholder="логин" />
+      </el-form-item>
+
+      <el-form-item>
+        <el-input v-model="password" placeholder="пароль" show-password type="password" />
+      </el-form-item>
+
+      <el-form-item>
+        <el-button type="primary" native-type="submit">Войти</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
 </template>
 
-<style></style>
+<style scoped>
+.login-form {
+  max-width: 420px;
+  margin: 24px auto;
+  padding: 12px;
+}
+</style>

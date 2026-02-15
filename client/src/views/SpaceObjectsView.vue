@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount } from 'vue'
+import { ref, onBeforeMount, computed } from 'vue'
 import axios from 'axios'
 import Cookies from 'js-cookie'
 import { useUserInfoStore } from '@/stores/user_info_store'
@@ -16,6 +16,22 @@ const loading = ref(false)
 const loadingExport = ref(false)
 const spaceObjects = ref([])
 const astronomers = ref([])
+const searchQuery = ref('')
+
+const filteredSpaceObjects = computed(() => {
+  if (!searchQuery.value || !spaceObjects.value.length) return spaceObjects.value
+  const q = searchQuery.value.toLowerCase().trim()
+  return spaceObjects.value.filter(o => {
+    const name = (o.name || '').toLowerCase()
+    const type = (o.object_type || '').toLowerCase()
+    const astronomer = (o.astronomer_name || '').toLowerCase()
+    return name.includes(q) || type.includes(q) || astronomer.includes(q)
+  })
+})
+
+const resetFilters = () => {
+  searchQuery.value = ''
+}
 
 const newObject = ref({ name: '', object_type: '', astronomer: '' })
 const editObject = ref(null)
@@ -103,108 +119,78 @@ async function exportToExcel() {
 </script>
 
 <template>
-  <div class="container-fluid">
+  <div>
     <div class="p-2">
-      <h4>Космические объекты</h4>
+      <!-- page title removed to match other pages -->
 
-      <div class="mb-3">
-        <button @click="exportToExcel" class="btn btn-success" :disabled="loadingExport">
-          <i class="bi bi-file-earmark-excel"></i>
-          {{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}
-        </button>
-      </div>
+      <el-card class="mb-4">
+        <template #header><span>Фильтры объектов</span></template>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-input v-model="searchQuery" placeholder="Поиск по названию, типу или астроному...">
+              <template #prefix><i class="bi bi-search"></i></template>
+            </el-input>
+          </el-col>
+          <el-col :span="4">
+            <el-button @click="resetFilters" type="info" plain>Сбросить</el-button>
+          </el-col>
+        </el-row>
+        <div class="mt-2 text-muted">Найдено объектов: {{ filteredSpaceObjects.length }}</div>
+      </el-card>
 
       <div v-if="loading">Загрузка данных...</div>
 
       <div v-else>
         <div v-if="is_superuser || userInfoStore.isAdmin()" class="mb-3">
-          <h5>Добавить объект</h5>
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <input class="form-control" placeholder="Имя" v-model="newObject.name" />
-            </div>
-            <div class="col-md-3">
-              <input class="form-control" placeholder="Тип" v-model="newObject.object_type" />
-            </div>
-            <div class="col-md-3">
-              <select class="form-select" v-model="newObject.astronomer">
-                <option value="">-- выбрать астронома --</option>
-                <option v-for="a in astronomers" :key="a.id" :value="a.id">{{ a.name }}</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-primary w-100" @click="onAddObject">Добавить</button>
-            </div>
-          </div>
+          <el-card>
+            <template #header><h5>Добавить объект</h5></template>
+            <el-row :gutter="12" align="end">
+              <el-col :span="4"><el-input v-model="newObject.name" placeholder="Имя" /></el-col>
+              <el-col :span="4"><el-input v-model="newObject.object_type" placeholder="Тип" /></el-col>
+              <el-col :span="4">
+                <el-select v-model="newObject.astronomer" placeholder="Выберите астронома">
+                  <el-option v-for="a in astronomers" :key="a.id" :label="a.name" :value="a.id" />
+                </el-select>
+              </el-col>
+              <el-col :span="4"><el-button type="primary" @click="onAddObject">Добавить</el-button></el-col>
+            </el-row>
+          </el-card>
         </div>
 
-        <div v-if="editObject" class="card mb-3 p-3">
-          <h5>Редактировать объект</h5>
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <input class="form-control" v-model="editObject.name" />
-            </div>
-            <div class="col-md-3">
-              <input class="form-control" v-model="editObject.object_type" />
-            </div>
-            <div class="col-md-3">
-              <select class="form-select" v-model="editObject.astronomer">
-                <option value="">-- выбрать астронома --</option>
-                <option v-for="a in astronomers" :key="a.id" :value="a.id">{{ a.name }}</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-success w-100" @click="onUpdateObject">Сохранить</button>
-            </div>
-          </div>
+        <div v-if="editObject" class="mb-3">
+          <el-card>
+            <template #header><h5>Редактировать объект</h5></template>
+            <el-row :gutter="12" align="end">
+              <el-col :span="4"><el-input v-model="editObject.name" /></el-col>
+              <el-col :span="4"><el-input v-model="editObject.object_type" /></el-col>
+              <el-col :span="4"><el-select v-model="editObject.astronomer" placeholder="Астроном"><el-option v-for="a in astronomers" :key="a.id" :label="a.name" :value="a.id" /></el-select></el-col>
+              <el-col :span="4">
+                <el-button type="success" @click="onUpdateObject">Сохранить</el-button>
+                <el-button @click="editObject = null" style="margin-left:8px">Отмена</el-button>
+              </el-col>
+            </el-row>
+          </el-card>
         </div>
 
-        <div v-if="!spaceObjects.length">Нет объектов</div>
+        <div class="mb-3">
+          <el-button @click="exportToExcel" type="success" :disabled="loadingExport">{{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}</el-button>
+        </div>
+
+        <div v-if="!filteredSpaceObjects.length">Нет объектов</div>
         <div v-else>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Имя</th>
-                <th>Тип</th>
-                <th>Астроном</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="obj in spaceObjects" :key="obj.id">
-                <td>{{ obj.id }}</td>
-                <td>{{ obj.name }}</td>
-                <td>{{ obj.object_type }}</td>
-                <td>{{ obj.astronomer_name || obj.astronomer }}</td>
-                <td>
-                  <button class="btn btn-sm btn-outline-secondary me-2" @click="startEdit(obj)">Редактировать</button>
-                  <button class="btn btn-sm btn-danger" @click="onDeleteObject(obj)">Удалить</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div v-if="editObject" class="card mt-3 p-3">
-          <h5>Редактировать объект</h5>
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <input class="form-control" v-model="editObject.name" />
-            </div>
-            <div class="col-md-3">
-              <input class="form-control" v-model="editObject.object_type" />
-            </div>
-            <div class="col-md-3">
-              <select class="form-select" v-model="editObject.astronomer">
-                <option value="">-- выбрать астронома --</option>
-                <option v-for="a in astronomers" :key="a.id" :value="a.id">{{ a.name }}</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-success w-100" @click="onUpdateObject">Сохранить</button>
-            </div>
-          </div>
+          <el-row :gutter="16">
+            <el-col :span="8" v-for="obj in filteredSpaceObjects" :key="obj.id">
+              <el-card class="space-object-card">
+                <div><strong>{{ obj.name }}</strong></div>
+                <div class="text-muted">{{ obj.object_type }}</div>
+                <div>{{ obj.astronomer_name || obj.astronomer }}</div>
+                <div class="mt-2">
+                  <el-button size="mini" @click="startEdit(obj)">Редактировать</el-button>
+                  <el-button size="mini" type="danger" @click="onDeleteObject(obj)">Удалить</el-button>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
         </div>
       </div>
     </div>

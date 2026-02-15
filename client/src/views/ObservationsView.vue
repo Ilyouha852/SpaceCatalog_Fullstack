@@ -147,223 +147,90 @@ const getResearcherName = (researcherId) => {
 </script>
 
 <template>
-  <div class="container-fluid">
+  <div>
     <div class="p-2">
       <div v-if="is_authenticated">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h6 class="card-title mb-0">Поиск</h6>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="input-group">
-                  <span class="input-group-text">
-                    <i class="bi bi-search"></i>
-                  </span>
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="searchQuery"
-                    placeholder="Поиск по ФИО астронома или исследователя..."
-                  />
-                  <button 
-                    v-if="searchQuery" 
-                    @click="resetFilters" 
-                    class="btn btn-outline-secondary"
-                  >
-                    Сбросить
-                  </button>
+        <el-card class="mb-4">
+          <template #header><span>Поиск наблюдений</span></template>
+          <el-row>
+            <el-col :span="24">
+              <el-input v-model="searchQuery" placeholder="Поиск по ФИО астронома или исследователя..." style="width:100%">
+                <template #prefix><i class="bi bi-search"></i></template>
+                <template #suffix>
+                  <el-button v-if="searchQuery" @click="resetFilters" type="text">Сбросить</el-button>
+                </template>
+              </el-input>
+            </el-col>
+          </el-row>
+        </el-card>
+
+        <div v-if="canCreateObservations && !userInfoStore.isResearcher()" class="mb-4">
+          <el-card>
+            <template #header><h5>Добавить наблюдение</h5></template>
+            <el-form @submit.prevent.stop="onObservationAdd" label-position="top">
+              <el-row :gutter="12">
+                <el-col :span="6">
+                  <el-select v-model="observationToAdd.astronomer" placeholder="Выберите астронома">
+                    <el-option v-for="d in astronomers" :key="d.id" :label="d.name" :value="d.id" />
+                  </el-select>
+                </el-col>
+                <el-col :span="6">
+                  <el-select v-model="observationToAdd.researcher" placeholder="Выберите исследователя">
+                    <el-option v-for="p in researchers" :key="p.id" :label="p.name" :value="p.id" />
+                  </el-select>
+                </el-col>
+                <el-col :span="6"><el-date-picker v-model="observationToAdd.date_time" type="datetime" placeholder="Дата и время" style="width:100%" /></el-col>
+                <el-col :span="4">
+                  <el-select v-model="observationToAdd.status" placeholder="Выберите статус">
+                    <el-option label="Ожидание" value="pending" />
+                    <el-option label="Запланировано" value="planned" />
+                    <el-option label="Завершено" value="completed" />
+                    <el-option label="Отменено" value="cancelled" />
+                  </el-select>
+                </el-col>
+                <el-col :span="2"><el-button type="primary" native-type="submit">Добавить</el-button></el-col>
+              </el-row>
+            </el-form>
+          </el-card>
+        </div>
+
+        <div v-if="observationToEdit" class="mb-3">
+          <el-card>
+            <template #header><h5>Редактировать наблюдение</h5></template>
+            <el-row :gutter="12" align="middle">
+              <el-col :span="4"><el-select v-model="observationToEdit.astronomer" placeholder="Астроном"><el-option v-for="d in astronomers" :key="d.id" :label="d.name" :value="d.id" /></el-select></el-col>
+              <el-col :span="4"><el-select v-model="observationToEdit.researcher" placeholder="Исследователь"><el-option v-for="p in researchers" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-col>
+              <el-col :span="6"><el-date-picker v-model="observationToEdit.date_time" type="datetime" style="width:100%" /></el-col>
+              <el-col :span="4"><el-select v-model="observationToEdit.status"><el-option label="Ожидание" value="pending" /><el-option label="Запланировано" value="planned" /><el-option label="Завершено" value="completed" /><el-option label="Отменено" value="cancelled" /></el-select></el-col>
+              <el-col :span="24" class="mt-2"><el-button type="success" @click="onObservationUpdate">Сохранить</el-button><el-button @click="observationToEdit = null">Отмена</el-button></el-col>
+            </el-row>
+          </el-card>
+        </div>
+
+        <div class="mb-3">Всего записей: {{ observations.length }}<span v-if="searchQuery"> | Найдено: {{ filteredObservations.length }}</span></div>
+        <div v-if="loading">Загрузка данных...</div>
+        <div class="mb-3"><el-button @click="exportToExcel" type="success" :disabled="loadingExport">{{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}</el-button></div>
+
+        <el-row :gutter="16">
+          <el-col :span="8" v-for="item in filteredObservations" :key="item.id">
+            <el-card class="mb-2">
+              <div class="card-grid">
+                <div><strong>{{ getAstronomerName(item.astronomer) }}</strong></div>
+                <div class="text-muted">{{ getResearcherName(item.researcher) }}</div>
+                <div>{{ new Date(item.date_time).toLocaleString('ru-RU') }}</div>
+                <div class="status">{{ item.status === 'pending' ? 'Ожидание' : item.status === 'planned' ? 'Запланировано' : item.status === 'completed' ? 'Завершено' : item.status === 'cancelled' ? 'Отменено' : item.status }}</div>
+                <div class="mt-2 actions">
+                  <el-button v-if="canCreateObservations" size="mini" @click="OnObservationEdit(item)">Редактировать</el-button>
+                  <el-button v-if="canCreateObservations" size="mini" type="danger" @click="OnObservationRemove(item)">Удалить</el-button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+            </el-card>
+          </el-col>
+        </el-row>
 
-        <form v-if="canCreateObservations && !userInfoStore.isResearcher()" @submit.prevent.stop="onObservationAdd">
-          <div class="row">
-            <div class="col">
-              <div class="form-floating mb-3">
-                <select
-                  class="form-select"
-                  v-model="observationToAdd.astronomer"
-                  required
-                >
-                  <option value="" disabled selected>Выберите астронома</option>
-                  <option :key="d.id" :value="d.id" v-for="d in astronomers">
-                    {{ d.name }}
-                  </option>
-                </select>
-                <label for="floatingInput">Астроном</label>
-              </div>
-            </div>
-            <div class="col">
-              <div class="form-floating mb-3">
-                <select
-                  class="form-select"
-                  v-model="observationToAdd.researcher"
-                  required
-                >
-                  <option value="" disabled selected>Выберите исследователя</option>
-                  <option :key="p.id" :value="p.id" v-for="p in researchers">
-                    {{ p.name }}
-                  </option>
-                </select>
-                <label for="floatingInput">Исследователь</label>
-              </div>
-            </div>
-            <div class="col">
-              <div class="form-floating mb-3">
-                <input
-                  type="datetime-local"
-                  class="form-control"
-                  v-model="observationToAdd.date_time"
-                  required
-                />
-                <label for="floatingInput">Дата и время</label>
-              </div>
-            </div>
-            <div class="col">
-              <div class="form-floating mb-3">
-                <select
-                  class="form-select"
-                  v-model="observationToAdd.status"
-                  required
-                >
-                  <option value="" disabled selected>Выберите статус</option>
-                  <option value="pending">Ожидание</option>
-                  <option value="planned">Запланировано</option>
-                  <option value="completed">Завершено</option>
-                  <option value="cancelled">Отменено</option>
-                </select>
-                <label for="floatingInput">Статус</label>
-              </div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-primary">Добавить</button>
-            </div>
-          </div>
-        </form>
-
-        <div v-if="observationToEdit" class="card mb-3 p-3">
-          <h5>Редактировать наблюдение</h5>
-          <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-              <select class="form-select" v-model="observationToEdit.astronomer" required>
-                <option value="">-- выбрать астронома --</option>
-                <option :key="d.id" :value="d.id" v-for="d in astronomers">{{ d.name }}</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <select class="form-select" v-model="observationToEdit.researcher" required>
-                <option value="">-- выбрать исследователя --</option>
-                <option :key="p.id" :value="p.id" v-for="p in researchers">{{ p.name }}</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <input type="datetime-local" class="form-control" v-model="observationToEdit.date_time" required />
-            </div>
-            <div class="col-md-2">
-              <select class="form-select" v-model="observationToEdit.status" required>
-                <option value="">-- выбрать статус --</option>
-                <option value="pending">Ожидание</option>
-                <option value="planned">Запланировано</option>
-                <option value="completed">Завершено</option>
-                <option value="cancelled">Отменено</option>
-              </select>
-            </div>
-            <div class="col-md-1">
-              <button class="btn btn-success w-100" @click="onObservationUpdate">Сохранить</button>
-            </div>
-            <div class="col-md-1">
-              <button class="btn btn-secondary w-100" @click="observationToEdit = null">Отмена</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          Всего записей: {{ observations.length }}
-          <span v-if="searchQuery"> | Найдено: {{ filteredObservations.length }}</span>
-        </div>
-
-        <div v-if="loading">Загрузка данных...</div>
-        
-        <div class="mb-3">
-          <button @click="exportToExcel" class="btn btn-success" :disabled="loadingExport">
-            <i class="bi bi-file-earmark-excel"></i>
-            {{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}
-          </button>
-        </div>
-
-        <div>
-          <div v-for="item in filteredObservations" :key="item.id" class="observation-item">
-            <div><strong>Астроном:</strong> {{ getAstronomerName(item.astronomer) }}</div>
-            <div><strong>Исследователь:</strong> {{ getResearcherName(item.researcher) }}</div>
-            <div><strong>Дата:</strong> {{ new Date(item.date_time).toLocaleString('ru-RU') }}</div>
-            <div><strong>Статус:</strong> {{ 
-              item.status === 'pending' ? 'Ожидание' :
-              item.status === 'planned' ? 'Запланировано' :
-              item.status === 'completed' ? 'Завершено' :
-              item.status === 'cancelled' ? 'Отменено' : item.status 
-            }}</div>
-            <button
-              v-if="canCreateObservations"
-              class="btn btn-sm btn-outline-secondary me-2"
-              @click="OnObservationEdit(item)"
-            >
-              Редактировать
-            </button>
-            <button 
-              v-if="canCreateObservations"
-              class="btn btn-sm btn-danger" 
-              @click="OnObservationRemove(item)"
-            >
-              Удалить
-            </button>
-          </div>
-          
-          <div v-if="filteredObservations.length === 0 && searchQuery" class="alert alert-info mt-3">
-            Записи не найдены
-          </div>
-        </div>
+        <el-empty v-if="filteredObservations.length === 0 && searchQuery" description="Записи не найдены" />
       </div>
       <div v-else>Вы не авторизованы</div>
-    </div>
-
-    <div v-if="observationToEdit" class="card mb-3 p-3">
-      <h5>Редактировать наблюдение</h5>
-      <div class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <select class="form-select" v-model="observationToEdit.astronomer" required>
-            <option value="">-- выбрать астронома --</option>
-            <option :key="d.id" :value="d.id" v-for="d in astronomers">{{ d.name }}</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select" v-model="observationToEdit.researcher" required>
-            <option value="">-- выбрать исследователя --</option>
-            <option :key="p.id" :value="p.id" v-for="p in researchers">{{ p.name }}</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <input type="datetime-local" class="form-control" v-model="observationToEdit.date_time" required />
-        </div>
-        <div class="col-md-2">
-          <select class="form-select" v-model="observationToEdit.status" required>
-            <option value="">-- выбрать статус --</option>
-            <option value="pending">Ожидание</option>
-            <option value="planned">Запланировано</option>
-            <option value="completed">Завершено</option>
-            <option value="cancelled">Отменено</option>
-          </select>
-        </div>
-        <div class="col-md-1">
-          <button class="btn btn-success w-100" @click="onObservationUpdate">Сохранить</button>
-        </div>
-        <div class="col-md-1">
-          <button class="btn btn-secondary w-100" @click="observationToEdit = null">Отмена</button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
