@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { storeToRefs } from "pinia";
-import { useUserInfoStore } from "@/stores/user_info_store";  // Изменено
+import { useUserInfoStore } from "@/stores/user_info_store";
 
 const observatoryStats = ref(null)
 const astronomerStats = ref(null)

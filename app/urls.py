@@ -19,7 +19,7 @@ router.register("astronomers", AstronomerViewSet, basename="astronomers")
 router.register("researchers", ResearcherViewSet, basename="researchers")
 router.register("observations", ObservationViewSet, basename="observations")
 router.register("space-objects", SpaceObjectViewSet, basename="space-objects")
-router.register('users', UserProfileViewSet, basename='users')  # Добавить это
+router.register('users', UserProfileViewSet, basename='users')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -60,7 +60,7 @@ class UserProfileViewSet(GenericViewSet):
         totp = pyotp.TOTP(self.request.user.userprofile.totp_key)
         url = totp.provisioning_uri(
             name=self.request.user.username,
-            issuer_name="МедЦентр"
+            issuer_name="Космический справочник"
     )
     
         return Response({"url": url})
@@ -71,10 +71,8 @@ class UserProfileViewSet(GenericViewSet):
         t = pyotp.TOTP(key)
         entered_key = self.request.data.get('key', '')
 
-        # verify current code (exact match). prefer t.verify() for production/time-window.
         if entered_key == t.now():
-            # use timezone-aware now and store expiry as epoch seconds in session
-            expires_at = timezone.now() + timedelta(minutes=1)
+            expires_at = timezone.now() + timedelta(minutes=10)
             self.request.session['second'] = True
             self.request.session['second_expired_at'] = expires_at.timestamp()
 
@@ -90,6 +88,7 @@ class UserProfileViewSet(GenericViewSet):
                 "status": "error",
                 "message": "Неверный код"
             }, status=400)
+    
     @action(url_path="login", methods=["POST"], detail=False)
     def process_login(self, *args, **kwargs):
         class LoginSerializer(serializers.Serializer):

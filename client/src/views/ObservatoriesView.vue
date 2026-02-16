@@ -22,7 +22,6 @@ const observatoryAddPictureRef = ref();
 const observatoryEditPictureRef = ref();
 const observatoryAddImageUrl = ref();
 const observatoryEditImageUrl = ref();
-const hasObservatoryEditPicture = ref(false);
 
 const searchQuery = ref("");
 const searchAddress = ref("");
@@ -184,10 +183,6 @@ const zoomImageUrl = ref("");
 function showZoomImage(imageUrl) {
   zoomImageUrl.value = imageUrl;
   showZoomImageContainer.value = true;
-}
-
-function hideZoomImage() {
-  showZoomImageContainer.value = false;
 }
 
 function getImageUrl(observatory) {

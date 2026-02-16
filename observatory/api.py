@@ -63,14 +63,10 @@ class ObservatoryViewSet(
             "aggregate_stats": aggregate_stats,
             "observatory_stats": list(observatory_stats)
         })
+    
     @action(detail=False, methods=["GET"], url_path="export-excel")
     def export_excel(self, request, *args, **kwargs):
-        """
-        Экспорт данных обсерваторий в Excel
-        """
-
         observatories = Observatory.objects.all()
-
         
         wb = Workbook()
         ws = wb.active
@@ -146,11 +142,9 @@ class AstronomerViewSet(
             "aggregate_stats": aggregate_stats,
             "specialization_stats": list(specialization_stats)
         })
+    
     @action(detail=False, methods=["GET"], url_path="export-excel")
     def export_excel(self, request, *args, **kwargs):
-        """
-        Экспорт данных астрономов в Excel
-        """
         astronomers = Astronomer.objects.select_related('observatory').all()
 
         wb = Workbook()
@@ -260,16 +254,12 @@ class ResearcherViewSet(
     
     @action(detail=False, url_path="my-medical-records", methods=['GET'], permission_classes=[IsResearcherPermission])
     def my_observation_records(self, request, *args, **kwargs):
-        # Some users may not have a related Researcher object — handle gracefully
         if not hasattr(request.user, 'researcher'):
             return Response([])
-        # Researcher doesn't own SpaceObjects; return empty list for compatibility
         return Response([])
+    
     @action(detail=False, methods=["GET"], url_path="export-excel")
     def export_excel(self, request, *args, **kwargs):
-        """
-        Экспорт данных исследователей в Excel
-        """
         researchers = Researcher.objects.all()
 
         wb = Workbook()
@@ -372,11 +362,9 @@ class ObservationViewSet(
             "status_stats": list(status_stats),
             "top_astronomers_by_observations": list(top_astronomers)
         })
+    
     @action(detail=False, methods=["GET"], url_path="export-excel")
     def export_excel(self, request, *args, **kwargs):
-        """
-        Экспорт данных наблюдений в Excel
-        """
         observations = Observation.objects.select_related('astronomer', 'researcher').all()
 
         wb = Workbook()
@@ -418,9 +406,6 @@ class ObservationViewSet(
         )
         response['Content-Disposition'] = 'attachment; filename="observations.xlsx"'
         return response
-
-# ObservationRecordViewSet removed — model deleted and data cleared
-
 
 class SpaceObjectViewSet(
     mixins.CreateModelMixin,
@@ -469,11 +454,9 @@ class SpaceObjectViewSet(
             "aggregate_stats": aggregate_stats,
             "top_astronomers_by_objects": list(top_astronomers)
         })
+    
     @action(detail=False, methods=["GET"], url_path="export-excel")
     def export_excel(self, request, *args, **kwargs):
-        """
-        Экспорт данных космических объектов в Excel
-        """
         objects = SpaceObject.objects.select_related('astronomer').all()
 
         wb = Workbook()

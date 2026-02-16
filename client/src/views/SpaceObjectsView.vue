@@ -121,8 +121,6 @@ async function exportToExcel() {
 <template>
   <div>
     <div class="p-2">
-      <!-- page title removed to match other pages -->
-
       <el-card class="mb-4">
         <template #header><span>Фильтры объектов</span></template>
         <el-row :gutter="16">

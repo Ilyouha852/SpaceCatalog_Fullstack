@@ -4,6 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie'
 import { useUserInfoStore } from '@/stores/user_info_store';
 import QRCode from 'qrcode'
+import { ElMessage } from 'element-plus'
 
 const key = ref();
 const userInfoStore = useUserInfoStore();
@@ -51,9 +52,11 @@ async function onActivate() {
             timeLeft.value = response.data.expires_in;
             startTimer();
         }
+
+        ElMessage({ message: 'Двухфакторная аутентификация выполнена', type: 'success' });
     } catch (err) {
         const msg = err?.response?.data?.message || err.message || 'Ошибка при активации';
-        alert(msg);
+        ElMessage({ message: msg, type: 'error' });
         console.error('Second factor activation failed:', err);
     }
 }
