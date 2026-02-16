@@ -1,7 +1,6 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted, onBeforeMount } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import Cookies from 'js-cookie'
 import { useUserInfoStore } from '@/stores/user_info_store';
 import QRCode from 'qrcode'
 import { ElMessage } from 'element-plus'
@@ -71,9 +70,7 @@ onMounted(() => {
     startTimer();
 });
 
-onBeforeMount(() => {
-    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken')
-})
+// CSRF header is set centrally in main.js
 
 onUnmounted(() => {
     if (timerInterval.value) {

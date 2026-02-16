@@ -1,16 +1,11 @@
 <script setup>
 import { ref, onBeforeMount, computed } from 'vue'
 import axios from 'axios'
-import Cookies from 'js-cookie'
 import { useUserInfoStore } from '@/stores/user_info_store'
 import { storeToRefs } from 'pinia'
 
 const userInfoStore = useUserInfoStore()
 const { is_superuser } = storeToRefs(userInfoStore)
-
-onBeforeMount(() => {
-  axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken')
-})
 
 const loading = ref(false)
 const loadingExport = ref(false)
