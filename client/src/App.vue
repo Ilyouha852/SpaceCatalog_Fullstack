@@ -31,9 +31,9 @@ async function onLogout() {
   <el-container>
     <el-header height="64px">
       <div class="header-row">
-        <div class="brand">Космический справочник</div>
+        <div style="font-weight:600; font-size:1.1rem;">Космический справочник</div>
 
-        <el-menu class="nav-menu" mode="horizontal" router>
+        <el-menu style="flex:1 1 auto; margin-left:20px;" mode="horizontal" router>
           <el-menu-item index="/">
             <router-link to="/">Обсерватории</router-link>
           </el-menu-item>
@@ -59,9 +59,6 @@ async function onLogout() {
 
         <div class="user-area">
           <div v-if="is_authenticated" class="user-info">
-            <el-badge v-if="userInfoStore.second" type="success">
-              <span class="badge-placeholder" />
-            </el-badge>
             <span class="username">{{ username }}</span>
             <el-button size="small" type="warning" plain @click="onLogout">Выйти</el-button>
           </div>
@@ -75,7 +72,7 @@ async function onLogout() {
     </el-header>
 
     <el-main>
-      <div class="main-container">
+      <div style="padding:16px;">
         <router-view />
       </div>
     </el-main>
@@ -90,23 +87,9 @@ async function onLogout() {
   justify-content: space-between;
 }
 
-.brand {
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-.nav-menu {
-  flex: 1 1 auto;
-  margin-left: 20px;
-}
-
 .user-area {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.main-container {
-  padding: 16px;
 }
 </style>

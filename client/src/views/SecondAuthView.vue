@@ -5,10 +5,10 @@ import { useUserInfoStore } from '@/stores/user_info_store';
 import QRCode from 'qrcode'
 import { ElMessage } from 'element-plus'
 
-const key = ref();
+const key = ref(null);
 const userInfoStore = useUserInfoStore();
 const totpUrl = ref();
-const qrcodeUrl = ref();
+const qrcodeUrl = ref(null);
 const timeLeft = ref(0); 
 const timerInterval = ref(null);
 
@@ -40,24 +40,18 @@ function formatTime(seconds) {
 }
 
 async function onActivate() {
-    try {
-        const response = await axios.post("/api/users/second-login/", {
-            key: key.value
-        });
+    const response = await axios.post("/api/users/second-login/", {
+        key: key.value
+    });
 
-        await userInfoStore.fetchUserInfo();
+    await userInfoStore.fetchUserInfo();
 
-        if (response.data.expires_in) {
-            timeLeft.value = response.data.expires_in;
-            startTimer();
-        }
-
-        ElMessage({ message: 'Двухфакторная аутентификация выполнена', type: 'success' });
-    } catch (err) {
-        const msg = err?.response?.data?.message || err.message || 'Ошибка при активации';
-        ElMessage({ message: msg, type: 'error' });
-        console.error('Second factor activation failed:', err);
+    if (response.data.expires_in) {
+        timeLeft.value = response.data.expires_in;
+        startTimer();
     }
+
+    ElMessage({ message: 'Двухфакторная аутентификация выполнена', type: 'success' });
 }
 
 async function getTotpKey() {
@@ -69,8 +63,6 @@ async function getTotpKey() {
 onMounted(() => {
     startTimer();
 });
-
-// CSRF header is set centrally in main.js
 
 onUnmounted(() => {
     if (timerInterval.value) {
@@ -99,24 +91,24 @@ watch(totpUrl, async () => {
             <el-button @click="onActivate" :disabled="!key || key.length !== 6" type="primary">Активировать второй фактор</el-button>
         </div>
 
-        <div class="button-group">
+        <div style="display:flex; gap:1rem; margin-bottom:2rem;">
             <el-button @click="getTotpKey" type="success">Запросить ключ</el-button>
         </div>
 
-        <div class="url-display" v-if="totpUrl">
-            <h3>Ссылка для настройки:</h3>
-            <div class="url-content">{{ totpUrl }}</div>
+        <div v-if="totpUrl" style="background:#f8f9fa; padding:1rem; border-radius:8px; margin-bottom:1.5rem; border:1px solid #dee2e6;">
+            <h3 style="margin-top:0; color:#2c3e50; margin-bottom:0.5rem;">Ссылка для настройки:</h3>
+            <div style="word-break:break-all; font-family:monospace; color:#495057; font-size:0.9rem;">{{ totpUrl }}</div>
         </div>
 
-        <div class="qr-container" v-if="qrcodeUrl">
-            <h3>QR-код:</h3>
-            <img :src="qrcodeUrl" alt="QR Code" style="width:200px; height:200px" />
+        <div v-if="qrcodeUrl" style="text-align:center; margin-bottom:1.5rem;">
+            <h3 style="color:#2c3e50; margin-bottom:1rem;">QR-код:</h3>
+            <img :src="qrcodeUrl" alt="QR Code" style="width:200px; height:200px; border:1px solid #dee2e6; border-radius:8px; padding:10px; background:white;" />
         </div>
     </el-card>
 </template>
 
 <style scoped>
-    
+
 .second-auth-container {
     max-width: 600px;
     margin: 2rem auto;
@@ -139,114 +131,6 @@ watch(totpUrl, async () => {
     margin-bottom: 1.5rem;
 }
 
-.code-input {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-}
-
-.code-input:focus {
-    outline: none;
-    border-color: #3498db;
-}
-
-.activate-btn {
-    padding: 0.75rem 1.5rem;
-    background: #3498db;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.activate-btn:hover:not(:disabled) {
-    background: #2980b9;
-}
-
-.activate-btn:disabled {
-    background: #bdc3c7;
-    cursor: not-allowed;
-}
-
-.button-group {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.key-btn, .group-btn {
-    flex: 1;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.key-btn {
-    background: #2ecc71;
-    color: white;
-}
-
-.key-btn:hover {
-    background: #27ae60;
-}
-
-.group-btn {
-    background: #e74c3c;
-    color: white;
-}
-
-.group-btn:hover {
-    background: #c0392b;
-}
-
-.url-display {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    border: 1px solid #dee2e6;
-}
-
-.url-display h3 {
-    margin-top: 0;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-}
-
-.url-content {
-    word-break: break-all;
-    font-family: monospace;
-    color: #495057;
-    font-size: 0.9rem;
-}
-
-.qr-container {
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
-.qr-container h3 {
-    color: #2c3e50;
-    margin-bottom: 1rem;
-}
-
-.qr-image {
-    width: 200px;
-    height: 200px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 10px;
-    background: white;
-}
-
 .time-indicator {
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
@@ -262,41 +146,4 @@ watch(totpUrl, async () => {
     margin-bottom: 0.5rem;
 }
 
-.time-icon {
-    margin-right: 0.5rem;
-    font-size: 1.4rem;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: #2ecc71;
-    border-radius: 4px;
-    transition: width 1s linear;
-}
-
-.info-box {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 1.5rem;
-    color: #856404;
-}
-
-.info-box h4 {
-    margin-top: 0;
-    color: #856404;
-}
-
-.info-box p {
-    margin: 0.5rem 0;
-}
 </style>

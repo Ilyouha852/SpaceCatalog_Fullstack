@@ -76,16 +76,11 @@ async function OnObservationEdit(observation) {
 }
 
 async function onObservationUpdate() {
-  try {
-    await axios.put(`/api/observations/${observationToEdit.value.id}/`, {
-      ...observationToEdit.value,
-    });
-    await fetchObservations();
-    observationToEdit.value = null;
-  } catch (error) {
-    console.error("Ошибка при обновлении наблюдения:", error);
-    alert("Ошибка при обновлении наблюдения");
-  }
+  await axios.put(`/api/observations/${observationToEdit.value.id}/`, {
+    ...observationToEdit.value,
+  });
+  await fetchObservations();
+  observationToEdit.value = null;
 }
 
 async function OnObservationRemove(observation) {
@@ -101,21 +96,17 @@ onBeforeMount(async () => {
 
 async function exportToExcel() {
   loadingExport.value = true;
-  try {
-    const response = await axios.get('/api/observations/export-excel/', { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'observations.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (e) {
-    console.error('Ошибка при экспорте:', e);
-    alert('Ошибка при экспорте данных');
-  } finally {
-    loadingExport.value = false;
-  }
+
+  const response = await axios.get('/api/observations/export-excel/', { responseType: 'blob' });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'observations.xlsx');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  loadingExport.value = false;
 }
 
 const canCreateObservations = computed(() => {
@@ -157,6 +148,7 @@ const getResearcherName = (researcherId) => {
               </el-input>
             </el-col>
           </el-row>
+          <div class="mt-2 text-muted">Найдено наблюдений: {{ filteredObservations.length }}</div>
         </el-card>
 
         <div v-if="canCreateObservations && !userInfoStore.isResearcher()" class="mb-4">

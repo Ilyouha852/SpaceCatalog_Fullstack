@@ -7,6 +7,7 @@ import SpaceObjectsView from '@/views/SpaceObjectsView.vue';
 import LoginView from '@/views/LoginView.vue';
 import StatisticsView from '@/views/StatisticsView.vue';
 import SecondAuthView from '@/views/SecondAuthView.vue';
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [

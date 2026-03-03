@@ -32,7 +32,7 @@ async function onLoginFormSubmit() {
 </script>
 
 <template>
-  <div class="login-form">
+  <div style="max-width: 420px; margin: 24px auto; padding: 12px;">
     <el-form label-position="top" @submit.prevent="onLoginFormSubmit">
       <el-form-item>
         <el-input v-model="username" placeholder="логин" />
@@ -50,9 +50,4 @@ async function onLoginFormSubmit() {
 </template>
 
 <style scoped>
-.login-form {
-  max-width: 420px;
-  margin: 24px auto;
-  padding: 12px;
-}
 </style>

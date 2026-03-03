@@ -74,16 +74,11 @@ async function OnResearcherEdit(researcher) {
 }
 
 async function onResearcherUpdate() {
-  try {
-    await axios.put(`/api/researchers/${researcherToEdit.value.id}/`, {
-      ...researcherToEdit.value,
-    });
-    await fetchResearchers();
-    researcherToEdit.value = null;
-  } catch (error) {
-    console.error("Ошибка при обновлении исследователя:", error);
-    alert("Ошибка при обновлении исследователя");
-  }
+  await axios.put(`/api/researchers/${researcherToEdit.value.id}/`, {
+    ...researcherToEdit.value,
+  });
+  await fetchResearchers();
+  researcherToEdit.value = null;
 }
 
 async function OnResearcherRemove(researcher) {
@@ -97,21 +92,17 @@ onBeforeMount(async () => {
 
 async function exportToExcel() {
   loadingExport.value = true;
-  try {
-    const response = await axios.get('/api/researchers/export-excel/', { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'researchers.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (e) {
-    console.error('Ошибка при экспорте:', e);
-    alert('Ошибка при экспорте данных');
-  } finally {
-    loadingExport.value = false;
-  }
+
+  const response = await axios.get('/api/researchers/export-excel/', { responseType: 'blob' });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'researchers.xlsx');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  loadingExport.value = false;
 }
 </script>
 
@@ -139,6 +130,7 @@ async function exportToExcel() {
               <el-button @click="resetFilters" type="info" plain>Сбросить</el-button>
             </el-col>
           </el-row>
+          <div class="mt-2 text-muted">Найдено исследователей: {{ filteredResearchers.length }}</div>
         </el-card>
 
         <div v-if="is_superuser || user_type === 'admin' || userInfoStore.hasPermission('can_manage_patients')">

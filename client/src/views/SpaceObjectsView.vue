@@ -33,34 +33,22 @@ const editObject = ref(null)
 
 async function fetchSpaceObjects() {
   loading.value = true
-  try {
-    const r = await axios.get('/api/space-objects/')
-    spaceObjects.value = r.data
-  } catch (e) {
-    console.error(e)
-  } finally {
-    loading.value = false
-  }
+
+  const r = await axios.get('/api/space-objects/')
+  spaceObjects.value = r.data
+
+  loading.value = false
 }
 
 async function fetchAstronomers() {
-  try {
-    const r = await axios.get('/api/astronomers/')
-    astronomers.value = r.data
-  } catch (e) {
-    console.error(e)
-  }
+  const r = await axios.get('/api/astronomers/')
+  astronomers.value = r.data
 }
 
 async function onAddObject() {
-  try {
-    await axios.post('/api/space-objects/', newObject.value)
-    newObject.value = { name: '', object_type: '', astronomer: '' }
-    await fetchSpaceObjects()
-  } catch (e) {
-    console.error('Create failed', e)
-    alert('Ошибка при создании объекта')
-  }
+  await axios.post('/api/space-objects/', newObject.value)
+  newObject.value = { name: '', object_type: '', astronomer: '' }
+  await fetchSpaceObjects()
 }
 
 function startEdit(obj) {
@@ -68,49 +56,36 @@ function startEdit(obj) {
 }
 
 async function onUpdateObject() {
-  try {
-    await axios.put(`/api/space-objects/${editObject.value.id}/`, editObject.value)
-    editObject.value = null
-    await fetchSpaceObjects()
-  } catch (e) {
-    console.error('Update failed', e)
-    alert('Ошибка при обновлении')
-  }
+  await axios.put(`/api/space-objects/${editObject.value.id}/`, editObject.value)
+  editObject.value = null
+  await fetchSpaceObjects()
 }
 
 async function onDeleteObject(obj) {
   if (!confirm('Удалить объект?')) return
-  try {
-    await axios.delete(`/api/space-objects/${obj.id}/`)
-    await fetchSpaceObjects()
-  } catch (e) {
-    console.error('Delete failed', e)
-    alert('Ошибка при удалении')
-  }
+
+  await axios.delete(`/api/space-objects/${obj.id}/`)
+  await fetchSpaceObjects()
+}
+
+async function exportToExcel() {
+  loadingExport.value = true
+
+  const response = await axios.get('/api/space-objects/export-excel/', { responseType: 'blob' })
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'space_objects.xlsx')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+
+  loadingExport.value = false
 }
 
 onBeforeMount(async () => {
   await Promise.all([fetchSpaceObjects(), fetchAstronomers()])
 })
-
-async function exportToExcel() {
-  loadingExport.value = true
-  try {
-    const response = await axios.get('/api/space-objects/export-excel/', { responseType: 'blob' })
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', 'space_objects.xlsx')
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  } catch (e) {
-    console.error('Ошибка при экспорте:', e)
-    alert('Ошибка при экспорте данных')
-  } finally {
-    loadingExport.value = false
-  }
-}
 </script>
 
 <template>
@@ -189,3 +164,6 @@ async function exportToExcel() {
     </div>
   </div>
 </template>
+
+<style scoped>
+</style>

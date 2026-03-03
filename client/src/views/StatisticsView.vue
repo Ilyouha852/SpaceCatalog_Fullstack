@@ -4,6 +4,9 @@ import axios from 'axios'
 import { storeToRefs } from "pinia";
 import { useUserInfoStore } from "@/stores/user_info_store";
 
+const userInfoStore = useUserInfoStore()  
+const { is_authenticated, is_superuser, can_see_statistics } = storeToRefs(userInfoStore)  
+
 const observatoryStats = ref(null)
 const astronomerStats = ref(null)
 const researcherStats = ref(null)
@@ -11,6 +14,10 @@ const observationStats = ref(null)
 const observationRecordStats = ref(null)
 const loading = ref(false)
 const error = ref(null)
+
+const canSeeStatistics = () => {
+  return is_superuser || can_see_statistics || userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.isAdmin()
+}
 
 async function loadObservatoryStats() {
   const response = await axios.get('/api/observatories/stats/')
@@ -39,32 +46,20 @@ async function loadObservationRecordStats() {
 
 async function loadAllStats() {
   loading.value = true
-  try {
-    await Promise.all([
-      loadObservatoryStats(),
-      loadAstronomerStats(),
-      loadResearcherStats(),
-      loadObservationStats(),
-      loadObservationRecordStats()
-    ])
-  } catch (err) {
-    error.value = 'Ошибка при загрузке статистики'
-    console.error(err)
-  } finally {
-    loading.value = false
-  }
+  await Promise.all([
+    loadObservatoryStats(),
+    loadAstronomerStats(),
+    loadResearcherStats(),
+    loadObservationStats(),
+    loadObservationRecordStats()
+  ])
+  loading.value = false
 }
 
 onMounted(() => {
   loadAllStats()
 })
 
-const userInfoStore = useUserInfoStore()  
-const { is_authenticated, is_superuser, can_see_statistics } = storeToRefs(userInfoStore)  
-
-const canSeeStatistics = () => {
-  return is_superuser || can_see_statistics || userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.isAdmin()
-}
 </script>
 
 <template>
@@ -76,10 +71,10 @@ const canSeeStatistics = () => {
         <el-card>
           <template #header><h4>Статистика обсерваторий</h4></template>
           <el-row>
-            <el-col :span="6"><div class="stat-card"><h3>{{ observatoryStats.aggregate_stats.total_count }}</h3><p class="text-muted">Всего обсерваторий</p></div></el-col>
-            <el-col :span="6"><div class="stat-card"><h3>{{ observatoryStats.aggregate_stats.astronomers_count }}</h3><p class="text-muted">Всего астрономов</p></div></el-col>
-            <el-col :span="6"><div class="stat-card"><h3>{{ (observatoryStats.observatory_stats && observatoryStats.observatory_stats[0]?.astronomer_count) || 0 }}</h3><p class="text-muted">Астрономов в топ-обсерватории</p></div></el-col>
-            <el-col :span="6"><div class="stat-card"><h3>{{ Math.round(observatoryStats.aggregate_stats.astronomers_count / observatoryStats.aggregate_stats.total_count) || 0 }}</h3><p class="text-muted">Среднее астрономов на обсерваторию</p></div></el-col>
+            <el-col :span="6"><div class="stat-card"><h3 style="margin-bottom:0.5rem; font-weight:bold;">{{ observatoryStats.aggregate_stats.total_count }}</h3><p class="text-muted">Всего обсерваторий</p></div></el-col>
+            <el-col :span="6"><div class="stat-card"><h3 style="margin-bottom:0.5rem; font-weight:bold;">{{ (observatoryStats.observatory_stats && observatoryStats.observatory_stats[0]?.astronomer_count) || 0 }}</h3><p class="text-muted">Астрономов в топ-обсерватории</p></div></el-col>
+            <el-col :span="6"><div class="stat-card"><h3 style="margin-bottom:0.5rem; font-weight:bold;">{{ observatoryStats.aggregate_stats.astronomers_count }}</h3><p class="text-muted">Всего астрономов</p></div></el-col>
+            <el-col :span="6"><div class="stat-card"><h3 style="margin-bottom:0.5rem; font-weight:bold;">{{ Math.round(observatoryStats.aggregate_stats.astronomers_count / observatoryStats.aggregate_stats.total_count) || 0 }}</h3><p class="text-muted">Среднее астрономов на обсерваторию</p></div></el-col>
           </el-row>
         </el-card>
       </el-col>
@@ -161,18 +156,6 @@ const canSeeStatistics = () => {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-
-.stat-card h3 {
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-}
-
-.card-header h4 {
-  margin-bottom: 0;
-}
-
-.alert {
-  margin-bottom: 0;
-}
 </style>
+
 

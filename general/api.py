@@ -51,6 +51,7 @@ class UserProfileViewSet(GenericViewSet):
             })
 
         return Response(data)
+    
     @action(url_path="get-totp", methods=['GET'], detail=False)
     def get_totp(self, *args, **kwargs):
 

@@ -83,16 +83,12 @@ async function onObservatoryAdd() {
   formData.set("address", observatoryToAdd.value.address);
   formData.set("phone", observatoryToAdd.value.phone);
 
-  try {
-    await axios.post("/api/observatories/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    await fetchObservatories();
-  } catch (error) {
-    console.error("Ошибка при создании обсерватории:", error);
-  }
+  await axios.post("/api/observatories/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  await fetchObservatories();
 }
 
 async function observatoryAddPictureChange() {
@@ -103,25 +99,20 @@ async function observatoryAddPictureChange() {
 
 async function exportToExcel() {
   loadingExport.value = true;
-  try {
-    const response = await axios.get("/api/observatories/export-excel/", {
-      responseType: 'blob'
-    });
- 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'observatories.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-  } catch (error) {
-    console.error("Ошибка при экспорте:", error);
-    alert("Ошибка при экспорте данных");
-  } finally {
-    loadingExport.value = false;
-  }
+
+  const response = await axios.get("/api/observatories/export-excel/", {
+    responseType: 'blob'
+  });
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'observatories.xlsx');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  loadingExport.value = false;
 }
 
 async function OnObservatoryEdit(observatory) {
@@ -133,28 +124,23 @@ async function OnObservatoryEdit(observatory) {
 }
 
 async function onObservatoryUpdate() {
-  try {
-    const formData = new FormData();
+  const formData = new FormData();
 
-    formData.set('name', observatoryToEdit.value.name);
-    formData.set('address', observatoryToEdit.value.address);
-    formData.set('phone', observatoryToEdit.value.phone);
+  formData.set('name', observatoryToEdit.value.name);
+  formData.set('address', observatoryToEdit.value.address);
+  formData.set('phone', observatoryToEdit.value.phone);
 
-    if (observatoryEditPictureRef.value && observatoryEditPictureRef.value.files[0]) {
-      formData.append('picture', observatoryEditPictureRef.value.files[0]);
-    }
-
-    await axios.put(`/api/observatories/${observatoryToEdit.value.id}/`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    await fetchObservatories();
-    observatoryToEdit.value = null;
-  } catch (error) {
-    console.error("Ошибка при обновлении обсерватории:", error);
-    alert("Ошибка при обновлении обсерватории");
+  if (observatoryEditPictureRef.value && observatoryEditPictureRef.value.files[0]) {
+    formData.append('picture', observatoryEditPictureRef.value.files[0]);
   }
+
+  await axios.put(`/api/observatories/${observatoryToEdit.value.id}/`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  await fetchObservatories();
+  observatoryToEdit.value = null;
 }
 
 async function observatoryEditPictureChange() {
@@ -304,7 +290,7 @@ function openImagePreviewModal(url) {
         <el-dialog v-model="imageDialogVisible" width="60%" :show-close="true">
           <template #title>Просмотр изображения</template>
           <div class="text-center">
-            <img v-if="currentImageUrl" :src="currentImageUrl" style="max-height:80vh; width:100%" />
+            <img v-if="currentImageUrl" :src="currentImageUrl" style="max-height:80vh; width:100%; object-fit:contain;" />
           </div>
           <template #footer>
             <el-button @click="imageDialogVisible = false">Закрыть</el-button>
@@ -317,22 +303,6 @@ function openImagePreviewModal(url) {
 </template>
 
 <style lang="scss" scoped>
-.observatory-item {
-  padding: 0.5rem;
-  margin: 0.5rem 0;
-  border: 1px solid silver;
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: 1fr auto auto auto auto auto auto;
-  gap: 16px;
-  align-items: center;
-  align-content: center;
-}
-
-img {
-  cursor: pointer;
-}
-
 .zoom-image-container {
   position: fixed;
   left: 0;
@@ -348,17 +318,5 @@ img {
   opacity: 0;
   height: 0;
   overflow: hidden;
-}
-
-.zoom-image-container.active {
-  opacity: 1;
-  transform: scale(1, 1);
-  height: auto;
-}
-
-.zoom-image-container img {
-  height: 100%;  
-  width: 100%;
-  object-fit: contain;
 }
 </style>

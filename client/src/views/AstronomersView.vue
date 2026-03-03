@@ -19,7 +19,7 @@ const astronomerAddPictureRef = ref();
 const astronomerEditPictureRef = ref();
 const astronomerAddImageUrl = ref();
 const astronomerEditImageUrl = ref();
-const hasAstronomerEditPicture = ref(false);
+const hasAstronomerEditPicture = ref();
 
 const searchQuery = ref("");
 const selectedObservatory = ref("");
@@ -96,20 +96,16 @@ async function onAstronomerAdd() {
   formData.set("specialization", astronomerToAdd.value.specialization);
   formData.set("observatory", astronomerToAdd.value.observatory);
 
-  try {
-    await axios.post("/api/astronomers/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    await fetchAstronomers();
+  await axios.post("/api/astronomers/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  await fetchAstronomers();
 
-    astronomerToAdd.value = {};
-    astronomerAddPictureRef.value = "";
-    astronomerAddImageUrl.value = "";
-  } catch (error) {
-    console.error("Ошибка при создании астронома:", error);
-  }
+  astronomerToAdd.value = {};
+  astronomerAddPictureRef.value = "";
+  astronomerAddImageUrl.value = "";
 }
 
 async function astronomerAddPictureChange() {
@@ -129,27 +125,22 @@ async function OnAstronomerEdit(astronomer) {
 }
 
 async function onAstronomerUpdate() {
-  try {
-    const formData = new FormData();
-    formData.set('name', astronomerToEdit.value.name);
-    formData.set('specialization', astronomerToEdit.value.specialization);
-    formData.set('observatory', astronomerToEdit.value.observatory);
+  const formData = new FormData();
+  formData.set('name', astronomerToEdit.value.name);
+  formData.set('specialization', astronomerToEdit.value.specialization);
+  formData.set('observatory', astronomerToEdit.value.observatory);
 
-    if (astronomerEditPictureRef.value && astronomerEditPictureRef.value.files[0]) {
-      formData.append('picture', astronomerEditPictureRef.value.files[0]);
-    }
-
-    await axios.put(`/api/astronomers/${astronomerToEdit.value.id}/`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    await fetchAstronomers();
-    astronomerToEdit.value = null;
-  } catch (error) {
-    console.error("Ошибка при обновлении астронома:", error);
-    alert("Ошибка при обновлении астронома");
+  if (astronomerEditPictureRef.value && astronomerEditPictureRef.value.files[0]) {
+    formData.append('picture', astronomerEditPictureRef.value.files[0]);
   }
+
+  await axios.put(`/api/astronomers/${astronomerToEdit.value.id}/`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  await fetchAstronomers();
+  astronomerToEdit.value = null;
 }
 
 async function astronomerEditPictureChange() {
@@ -173,21 +164,17 @@ onBeforeMount(async () => {
 
 async function exportToExcel() {
   loadingExport.value = true;
-  try {
-    const response = await axios.get('/api/astronomers/export-excel/', { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'astronomers.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (e) {
-    console.error('Ошибка при экспорте:', e);
-    alert('Ошибка при экспорте данных');
-  } finally {
-    loadingExport.value = false;
-  }
+
+  const response = await axios.get('/api/astronomers/export-excel/', { responseType: 'blob' });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'astronomers.xlsx');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  loadingExport.value = false;
 }
 
 const currentImageUrl = ref('');
@@ -317,7 +304,7 @@ function getImageUrl(astronomer) {
 
         <el-dialog v-model="imageDialogVisible" width="60%">
           <template #title>Просмотр изображения</template>
-          <div class="text-center"><img v-if="currentImageUrl" :src="currentImageUrl" style="max-height:80vh; width:100%" /></div>
+          <div class="text-center"><img v-if="currentImageUrl" :src="currentImageUrl" style="max-height:80vh; width:100%; object-fit:contain;" /></div>
           <template #footer>
             <el-button @click="imageDialogVisible = false">Закрыть</el-button>
           </template>
@@ -329,22 +316,6 @@ function getImageUrl(astronomer) {
 </template>
 
 <style lang="scss" scoped>
-.astronomer-item {
-  padding: 0.5rem;
-  margin: 0.5rem 0;
-  border: 1px solid silver;
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: 1fr auto auto auto auto auto;
-  gap: 16px;
-  align-items: center;
-  align-content: center;
-}
-
-img {
-  cursor: pointer;
-}
-
 .zoom-image-container {
   position: fixed;
   left: 0;
@@ -360,17 +331,5 @@ img {
   opacity: 0;
   height: 0;
   overflow: hidden;
-}
-
-.zoom-image-container.active {
-  opacity: 1;
-  transform: scale(1, 1);
-  height: auto;
-}
-
-.zoom-image-container img {
-  height: 100%;
-  width: 100%;
-  object-fit: contain;
 }
 </style>
