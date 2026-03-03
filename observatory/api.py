@@ -306,8 +306,8 @@ class ObservationViewSet(
     serializer_class = ObservationSerializer
     
     def get_permissions(self):
-        if self.action in ['update', 'destroy']:
-            return [SecondFactorPermission()]
+        if self.action in ['update', 'partial_update', 'destroy']:
+            return [IsAdminPermission()]
         elif self.action in ['create']:
             return [CanCreateObservationsPermission()]
         return super().get_permissions()
@@ -327,6 +327,7 @@ class ObservationViewSet(
             return qs.filter(researcher=researcher)
  
         return qs.none()
+        
     @action(detail=False, methods=["GET"], url_path="stats", permission_classes=[CanSeeStatisticsPermission])
     def get_stats(self, request, *args, **kwargs):
         from django.db.models import Count

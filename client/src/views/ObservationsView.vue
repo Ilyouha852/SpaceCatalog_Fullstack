@@ -62,7 +62,7 @@ async function fetchObservations() {
   loading.value = true;
   let url = "/api/observations/";
   if (userInfoStore.isAstronomer && userInfoStore.isAstronomer()) {
-    url = "/api/astronomers/my-observations/";
+    url = "/api/astronomers/my-appointments/";
   } else if (userInfoStore.isResearcher && userInfoStore.isResearcher()) {
     url = "/api/observations/";
   }
@@ -138,6 +138,10 @@ const canCreateObservations = computed(() => {
   }
   
   return false;
+});
+
+const isAdmin = computed(() => {
+  return is_superuser.value || (userInfoStore.isAdmin && userInfoStore.isAdmin());
 });
 
 const getAstronomerName = (astronomerId) => {
@@ -245,8 +249,8 @@ const getResearcherName = (researcherId) => {
                 <div>{{ new Date(item.date_time).toLocaleString('ru-RU') }}</div>
                 <div class="status">{{ item.status === 'pending' ? 'Ожидание' : item.status === 'planned' ? 'Запланировано' : item.status === 'completed' ? 'Завершено' : item.status === 'cancelled' ? 'Отменено' : item.status }}</div>
                 <div class="mt-2 actions">
-                  <el-button v-if="canCreateObservations" size="mini" @click="OnObservationEdit(item)">Редактировать</el-button>
-                  <el-button v-if="canCreateObservations" size="mini" type="danger" @click="OnObservationRemove(item)">Удалить</el-button>
+                  <el-button v-if="isAdmin" size="mini" @click="OnObservationEdit(item)">Редактировать</el-button>
+                  <el-button v-if="isAdmin" size="mini" type="danger" @click="OnObservationRemove(item)">Удалить</el-button>
                 </div>
               </div>
             </el-card>
