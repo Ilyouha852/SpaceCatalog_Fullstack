@@ -38,7 +38,6 @@ class Command(BaseCommand):
             astronomer = Astronomer.objects.create(
                 user=user,
                 name=fake.name(),
-                research_field=fake.job(),
                 observatory=obs
             )
             astronomer_qs.append(astronomer)

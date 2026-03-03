@@ -47,8 +47,20 @@ class UserProfileViewSet(GenericViewSet):
             data.update({
                 'user_type': user_profile.type,
                 'can_see_statistics': user_profile.can_see_statistics,
+                'astronomer_id': None,
+                'researcher_id': None,
                 
             })
+            try:
+                if hasattr(self.request.user, 'astronomer') and self.request.user.astronomer:
+                    data['astronomer_id'] = self.request.user.astronomer.id
+            except:
+                pass
+            try:
+                if hasattr(self.request.user, 'researcher') and self.request.user.researcher:
+                    data['researcher_id'] = self.request.user.researcher.id
+            except:
+                pass
 
         return Response(data)
     

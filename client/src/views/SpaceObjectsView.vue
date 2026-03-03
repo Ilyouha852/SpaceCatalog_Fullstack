@@ -1,8 +1,13 @@
 <script setup>
-import { ref, onBeforeMount, computed } from 'vue'
-import axios from 'axios'
-import { useUserInfoStore } from '@/stores/user_info_store'
-import { storeToRefs } from 'pinia'
+import { ref, onBeforeMount, computed } from 'vue';
+import { useUserInfoStore } from '@/stores/user_info_store';
+import { storeToRefs } from 'pinia';
+
+import axios from "axios";
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const userInfoStore = useUserInfoStore()
 const { is_superuser } = storeToRefs(userInfoStore)
@@ -32,12 +37,35 @@ const newObject = ref({ name: '', object_type: '', astronomer: '' })
 const editObject = ref(null)
 
 async function fetchSpaceObjects() {
-  loading.value = true
+  loading.value = true;
+  const r = await axios.get('/api/space-objects/');
+  const all = r.data || [];
 
-  const r = await axios.get('/api/space-objects/')
-  spaceObjects.value = r.data
+  if (is_superuser.value || (userInfoStore.isAdmin && userInfoStore.isAdmin())) {
+    spaceObjects.value = all;
+    loading.value = false;
+    return;
+  }
 
-  loading.value = false
+  if (userInfoStore.isResearcher && userInfoStore.isResearcher()) {
+    spaceObjects.value = [];
+    loading.value = false;
+    return;
+  }
+
+  if (userInfoStore.isAstronomer && userInfoStore.isAstronomer()) {
+    spaceObjects.value = all.filter(o =>
+      o.astronomer === userInfoStore.astronomer_id ||
+      o.astronomer_id === userInfoStore.astronomer_id ||
+      o.astronomer_user_id === userInfoStore.user_id ||
+      o.user_id === userInfoStore.user_id
+    );
+    loading.value = false;
+    return;
+  }
+
+  spaceObjects.value = [];
+  loading.value = false;
 }
 
 async function fetchAstronomers() {

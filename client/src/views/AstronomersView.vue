@@ -1,8 +1,13 @@
 <script setup>
 import { onBeforeMount, ref, computed } from "vue";
-import axios from "axios";
 import { storeToRefs } from "pinia";
-import { useUserInfoStore } from "@/stores/user_info_store";  
+import { useUserInfoStore } from "@/stores/user_info_store";
+
+import axios from "axios";
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const userInfoStore = useUserInfoStore();  
 const { is_authenticated, is_superuser, user_type } = storeToRefs(userInfoStore);
@@ -23,7 +28,6 @@ const hasAstronomerEditPicture = ref();
 
 const searchQuery = ref("");
 const selectedObservatory = ref("");
-const selectedSpecialization = ref("");
 
 const observatoriesById = computed(() => {
   const result = {};
@@ -33,15 +37,6 @@ const observatoriesById = computed(() => {
   return result;
 });
 
-const specializationsList = computed(() => {
-  const specializations = new Set();
-  astronomers.value.forEach(astronomer => {
-    if (astronomer.specialization) {
-      specializations.add(astronomer.specialization);
-    }
-  });
-  return Array.from(specializations).sort();
-});
 
 const filteredAstronomers = computed(() => {
   if (!astronomers.value.length) return [];
@@ -60,10 +55,6 @@ const filteredAstronomers = computed(() => {
       return false;
     }
 
-    if (selectedSpecialization.value && astronomer.specialization !== selectedSpecialization.value) {
-      return false;
-    }
-
     return true;
   });
 });
@@ -71,7 +62,6 @@ const filteredAstronomers = computed(() => {
 const resetFilters = () => {
   searchQuery.value = "";
   selectedObservatory.value = "";
-  selectedSpecialization.value = "";
 };
 
 async function fetchObservatories() {
@@ -93,7 +83,6 @@ async function onAstronomerAdd() {
     formData.set("picture", astronomerAddPictureRef.value.files[0]);
   }
   formData.set("name", astronomerToAdd.value.name);
-  formData.set("specialization", astronomerToAdd.value.specialization);
   formData.set("observatory", astronomerToAdd.value.observatory);
 
   await axios.post("/api/astronomers/", formData, {
@@ -127,7 +116,6 @@ async function OnAstronomerEdit(astronomer) {
 async function onAstronomerUpdate() {
   const formData = new FormData();
   formData.set('name', astronomerToEdit.value.name);
-  formData.set('specialization', astronomerToEdit.value.specialization);
   formData.set('observatory', astronomerToEdit.value.observatory);
 
   if (astronomerEditPictureRef.value && astronomerEditPictureRef.value.files[0]) {
@@ -215,11 +203,7 @@ function getImageUrl(astronomer) {
                 <el-option v-for="p in observatories" :key="p.id" :label="p.name" :value="p.id" />
               </el-select>
             </el-col>
-            <el-col :span="6">
-              <el-select v-model="selectedSpecialization" placeholder="Все специализации" clearable>
-                <el-option v-for="spec in specializationsList" :key="spec" :label="spec" :value="spec" />
-              </el-select>
-            </el-col>
+            
             <el-col :span="4">
               <el-button @click="resetFilters" type="info" plain>Сбросить</el-button>
             </el-col>
@@ -233,7 +217,7 @@ function getImageUrl(astronomer) {
             <el-form @submit.prevent.stop="onAstronomerAdd" label-position="top">
               <el-row :gutter="12" align="middle">
                 <el-col :span="6"><el-input v-model="astronomerToAdd.name" placeholder="ФИО астронома" /></el-col>
-                <el-col :span="6"><el-input v-model="astronomerToAdd.specialization" placeholder="Специализация" /></el-col>
+                
                 <el-col :span="6">
                   <el-select v-model="astronomerToAdd.observatory" placeholder="Выберите обсерваторию">
                     <el-option v-for="p in observatories" :key="p.id" :label="p.name" :value="p.id" />
@@ -256,7 +240,7 @@ function getImageUrl(astronomer) {
             </template>
             <el-row :gutter="12" align="middle">
               <el-col :span="6"><el-input v-model="astronomerToEdit.name" placeholder="ФИО астронома" /></el-col>
-              <el-col :span="6"><el-input v-model="astronomerToEdit.specialization" placeholder="Специализация" /></el-col>
+              
               <el-col :span="6">
                 <el-select v-model="astronomerToEdit.observatory" placeholder="Выберите обсерваторию">
                   <el-option v-for="p in observatories" :key="p.id" :label="p.name" :value="p.id" />
@@ -281,7 +265,7 @@ function getImageUrl(astronomer) {
 
         <div v-if="loading">Загрузка данных...</div>
 
-        <div class="mb-3">
+        <div class="mb-3" v-if="!loading">
           <el-button @click="exportToExcel" type="success" :disabled="loadingExport">{{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}</el-button>
         </div>
 
@@ -289,7 +273,7 @@ function getImageUrl(astronomer) {
           <el-col :span="8" v-for="item in filteredAstronomers" :key="item.id">
             <el-card class="astronomer-card">
               <div><strong>{{ item.name }}</strong></div>
-              <div class="text-muted">{{ item.specialization }}</div>
+              
               <div>{{ observatoriesById[item.observatory] }}</div>
                 <div v-if="item.picture" class="mt-2">
                 <img :src="getImageUrl(item)" style="max-height:60px; cursor:pointer;" @click="openImagePreviewModal(getImageUrl(item))" />

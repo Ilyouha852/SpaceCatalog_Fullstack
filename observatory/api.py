@@ -129,18 +129,11 @@ class AstronomerViewSet(
     def get_stats(self, request, *args, **kwargs):
         aggregate_stats = {
             "total_count": Astronomer.objects.count(),
-            "research_fields_count": Astronomer.objects.values('research_field').distinct().count(),
             "observatories_count": Astronomer.objects.values('observatory').distinct().count(),
             "observations_count": Observation.objects.count(),
         }
-
-        specialization_stats = Astronomer.objects.values('research_field').annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
         return Response({
-            "aggregate_stats": aggregate_stats,
-            "specialization_stats": list(specialization_stats)
+            "aggregate_stats": aggregate_stats
         })
     
     @action(detail=False, methods=["GET"], url_path="export-excel")
@@ -151,7 +144,7 @@ class AstronomerViewSet(
         ws = wb.active
         ws.title = "Астрономы"
 
-        headers = ["ID", "ФИО", "Поле исследований", "Обсерватория"]
+        headers = ["ID", "ФИО", "Обсерватория"]
         for col_num, header in enumerate(headers, 1):
             col_letter = get_column_letter(col_num)
             ws[f"{col_letter}1"] = header
@@ -160,8 +153,7 @@ class AstronomerViewSet(
         for row_num, a in enumerate(astronomers, 2):
             ws[f"A{row_num}"] = a.id
             ws[f"B{row_num}"] = a.name
-            ws[f"C{row_num}"] = a.research_field or ""
-            ws[f"D{row_num}"] = a.observatory.name if a.observatory else ""
+            ws[f"C{row_num}"] = a.observatory.name if a.observatory else ""
 
         for column in ws.columns:
             max_length = 0

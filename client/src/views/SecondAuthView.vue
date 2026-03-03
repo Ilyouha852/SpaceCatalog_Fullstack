@@ -1,9 +1,14 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
 import { useUserInfoStore } from '@/stores/user_info_store';
-import QRCode from 'qrcode'
-import { ElMessage } from 'element-plus'
+import QRCode from 'qrcode';
+import { ElMessage } from 'element-plus';
+
+import axios from 'axios';
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const key = ref(null);
 const userInfoStore = useUserInfoStore();

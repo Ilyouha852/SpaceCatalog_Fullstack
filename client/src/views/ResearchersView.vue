@@ -1,8 +1,13 @@
 <script setup>
 import { computed, onBeforeMount, ref } from "vue";
-import axios from "axios";
 import { storeToRefs } from "pinia";
 import { useUserInfoStore } from "@/stores/user_info_store";  
+
+import axios from 'axios'
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const userInfoStore = useUserInfoStore();  
 const { is_superuser, is_authenticated, user_type } = storeToRefs(userInfoStore);  
@@ -161,7 +166,7 @@ async function exportToExcel() {
 
         <div v-if="loading">Загрузка данных...</div>
 
-        <div class="mb-3">
+        <div class="mb-3" v-if="!loading">
           <el-button @click="exportToExcel" type="success" :disabled="loadingExport">{{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}</el-button>
         </div>
 

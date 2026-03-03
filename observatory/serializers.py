@@ -12,6 +12,7 @@ class ObservatorySerializer(serializers.ModelSerializer):
 class AstronomerSerializer(serializers.ModelSerializer):
     observatory = serializers.PrimaryKeyRelatedField(
         queryset=Observatory.objects.all(), required=True)
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
 
     def create(self, validated_data):
         return super().create(validated_data)
@@ -26,7 +27,7 @@ class AstronomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Astronomer
-        fields = ['id', 'name', 'research_field', 'observatory', 'picture']
+        fields = ['id', 'name', 'observatory', 'picture', 'user_id']
 
 class ResearcherSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)

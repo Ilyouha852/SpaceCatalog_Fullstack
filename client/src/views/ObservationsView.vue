@@ -1,8 +1,13 @@
 <script setup>
 import { onBeforeMount, ref, computed } from "vue";
-import axios from "axios";
 import { storeToRefs } from "pinia";
 import { useUserInfoStore } from "@/stores/user_info_store";
+
+import axios from 'axios';
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const userInfoStore = useUserInfoStore();
 const { is_authenticated, is_superuser } = storeToRefs(userInfoStore);
@@ -33,6 +38,20 @@ const filteredObservations = computed(() => {
     
     return astronomerName.includes(query) || researcherName.includes(query);
   });
+});
+
+const astronomerOptions = computed(() => {
+  if ((userInfoStore.isAdmin && userInfoStore.isAdmin()) || is_superuser.value) return astronomers.value || [];
+  if (userInfoStore.isResearcher && userInfoStore.isResearcher()) return astronomers.value || [];
+  if (userInfoStore.isAstronomer && userInfoStore.isAstronomer()) return (astronomers.value || []).filter(a => a.user_id && a.user_id === userInfoStore.user_id);
+  return [];
+});
+
+const researcherOptions = computed(() => {
+  if ((userInfoStore.isAdmin && userInfoStore.isAdmin()) || is_superuser.value) return researchers.value || [];
+  if (userInfoStore.isAstronomer && userInfoStore.isAstronomer()) return researchers.value || [];
+  if (userInfoStore.isResearcher && userInfoStore.isResearcher()) return (researchers.value || []).filter(r => r.user_id && r.user_id === userInfoStore.user_id);
+  return [];
 });
 
 const resetFilters = () => {
@@ -151,19 +170,19 @@ const getResearcherName = (researcherId) => {
           <div class="mt-2 text-muted">Найдено наблюдений: {{ filteredObservations.length }}</div>
         </el-card>
 
-        <div v-if="canCreateObservations && !userInfoStore.isResearcher()" class="mb-4">
+        <div v-if="canCreateObservations || (userInfoStore.isResearcher && userInfoStore.isResearcher())" class="mb-4">
           <el-card>
             <template #header><h5>Добавить наблюдение</h5></template>
             <el-form @submit.prevent.stop="onObservationAdd" label-position="top">
               <el-row :gutter="12">
                 <el-col :span="6">
                   <el-select v-model="observationToAdd.astronomer" placeholder="Выберите астронома">
-                    <el-option v-for="d in astronomers" :key="d.id" :label="d.name" :value="d.id" />
+                    <el-option v-for="d in astronomerOptions" :key="d.id" :label="d.name" :value="d.id" />
                   </el-select>
                 </el-col>
                 <el-col :span="6">
                   <el-select v-model="observationToAdd.researcher" placeholder="Выберите исследователя">
-                    <el-option v-for="p in researchers" :key="p.id" :label="p.name" :value="p.id" />
+                    <el-option v-for="p in researcherOptions" :key="p.id" :label="p.name" :value="p.id" />
                   </el-select>
                 </el-col>
                 <el-col :span="6"><el-date-picker v-model="observationToAdd.date_time" type="datetime" placeholder="Дата и время" style="width:100%" /></el-col>
@@ -185,18 +204,37 @@ const getResearcherName = (researcherId) => {
           <el-card>
             <template #header><h5>Редактировать наблюдение</h5></template>
             <el-row :gutter="12" align="middle">
-              <el-col :span="4"><el-select v-model="observationToEdit.astronomer" placeholder="Астроном"><el-option v-for="d in astronomers" :key="d.id" :label="d.name" :value="d.id" /></el-select></el-col>
-              <el-col :span="4"><el-select v-model="observationToEdit.researcher" placeholder="Исследователь"><el-option v-for="p in researchers" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-col>
-              <el-col :span="6"><el-date-picker v-model="observationToEdit.date_time" type="datetime" style="width:100%" /></el-col>
-              <el-col :span="4"><el-select v-model="observationToEdit.status"><el-option label="Ожидание" value="pending" /><el-option label="Запланировано" value="planned" /><el-option label="Завершено" value="completed" /><el-option label="Отменено" value="cancelled" /></el-select></el-col>
-              <el-col :span="24" class="mt-2"><el-button type="success" @click="onObservationUpdate">Сохранить</el-button><el-button @click="observationToEdit = null">Отмена</el-button></el-col>
+              <el-col :span="4">
+                <el-select v-model="observationToEdit.astronomer" placeholder="Астроном">
+                  <el-option v-for="d in astronomers" :key="d.id" v-if="userInfoStore.isAdmin() || d.user_id === userInfoStore.user_id" :label="d.name" :value="d.id" />
+                </el-select>
+              </el-col>
+              <el-col :span="4">
+                <el-select v-model="observationToEdit.researcher" placeholder="Исследователь">
+                  <el-option v-for="p in researchers" :key="p.id" v-if="userInfoStore.isAdmin() || p.user_id === userInfoStore.user_id" :label="p.name" :value="p.id" />
+                </el-select>
+              </el-col>
+              <el-col :span="6">
+                <el-date-picker v-model="observationToEdit.date_time" type="datetime" style="width:100%" />
+              </el-col>
+              <el-col :span="4">
+                <el-select v-model="observationToEdit.status">
+                  <el-option label="Ожидание" value="pending" />
+                  <el-option label="Запланировано" value="planned" />
+                  <el-option label="Завершено" value="completed" />
+                  <el-option label="Отменено" value="cancelled" />
+                </el-select>
+              </el-col>
+              <el-col :span="24" class="mt-2">
+                <el-button type="success" @click="onObservationUpdate">Сохранить</el-button>
+                <el-button @click="observationToEdit = null">Отмена</el-button>
+              </el-col>
             </el-row>
           </el-card>
         </div>
 
-        <div class="mb-3">Всего записей: {{ observations.length }}<span v-if="searchQuery"> | Найдено: {{ filteredObservations.length }}</span></div>
         <div v-if="loading">Загрузка данных...</div>
-        <div class="mb-3"><el-button @click="exportToExcel" type="success" :disabled="loadingExport">{{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}</el-button></div>
+        <div class="mb-3" v-if="!loading"><el-button @click="exportToExcel" type="success" :disabled="loadingExport">{{ loadingExport ? 'Экспорт...' : 'Экспорт в Excel' }}</el-button></div>
 
         <el-row :gutter="16">
           <el-col :span="8" v-for="item in filteredObservations" :key="item.id">

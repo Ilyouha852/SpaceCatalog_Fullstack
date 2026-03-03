@@ -3,8 +3,13 @@
 import { storeToRefs } from "pinia";
 import { useUserInfoStore } from "@/stores/user_info_store";
 import { onMounted } from "vue";
-import axios from "axios";
 import { useRouter } from "vue-router";
+
+import axios from "axios";
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const userInfoStore = useUserInfoStore();
 const { 
@@ -34,22 +39,22 @@ async function onLogout() {
         <div style="font-weight:600; font-size:1.1rem;">Космический справочник</div>
 
         <el-menu style="flex:1 1 auto; margin-left:20px;" mode="horizontal" router>
-          <el-menu-item index="/">
+          <el-menu-item v-if="is_authenticated" index="/">
             <router-link to="/">Обсерватории</router-link>
           </el-menu-item>
-          <el-menu-item index="/astronomers">
+          <el-menu-item v-if="is_authenticated" index="/astronomers">
             <router-link to="/astronomers">Астрономы</router-link>
           </el-menu-item>
-          <el-menu-item v-if="is_superuser || user_type === 'admin' || user_type === 'astronomer' || userInfoStore.hasPermission('can_manage_researchers')" index="/researchers">
+          <el-menu-item v-if="is_authenticated" index="/researchers">
             <router-link to="/researchers">Исследователи</router-link>
           </el-menu-item>
           <el-menu-item v-if="is_authenticated" index="/observations">
             <router-link to="/observations">Наблюдения</router-link>
           </el-menu-item>
-          <el-menu-item v-if="is_authenticated" index="/space-objects">
+          <el-menu-item v-if="userInfoStore.hasPermission('can_manage_space_objects') || is_superuser || user_type === 'astronomer'" index="/space-objects">
             <router-link to="/space-objects">Космические объекты</router-link>
           </el-menu-item>
-          <el-menu-item v-if="userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.isAdmin()" index="/statistics">
+          <el-menu-item v-if="userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.is_superuser" index="/statistics">
             <router-link to="/statistics">Статистика</router-link>
           </el-menu-item>
           <el-menu-item v-if="is_authenticated" index="/second-auth">

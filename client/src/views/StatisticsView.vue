@@ -1,8 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, onMounted } from 'vue';
 import { storeToRefs } from "pinia";
 import { useUserInfoStore } from "@/stores/user_info_store";
+
+import axios from "axios";
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const userInfoStore = useUserInfoStore()  
 const { is_authenticated, is_superuser, can_see_statistics } = storeToRefs(userInfoStore)  
@@ -84,9 +89,8 @@ onMounted(() => {
           <template #header><h4>Статистика астрономов</h4></template>
           <el-row>
             <el-col :span="6"><div class="stat-card"><h3>{{ astronomerStats.aggregate_stats.total_count }}</h3><p class="text-muted">Всего астрономов</p></div></el-col>
-            <el-col :span="6"><div class="stat-card"><h3>{{ astronomerStats.aggregate_stats.research_fields_count }}</h3><p class="text-muted">Областей исследований</p></div></el-col>
-            <el-col :span="6"><div class="stat-card"><h3>{{ astronomerStats.aggregate_stats.observatories_count }}</h3><p class="text-muted">Обсерваторий</p></div></el-col>
-            <el-col :span="6"><div class="stat-card"><h3>{{ astronomerStats.aggregate_stats.observations_count }}</h3><p class="text-muted">Всего наблюдений</p></div></el-col>
+            <el-col :span="8"><div class="stat-card"><h3>{{ astronomerStats.aggregate_stats.observatories_count }}</h3><p class="text-muted">Обсерваторий</p></div></el-col>
+            <el-col :span="8"><div class="stat-card"><h3>{{ astronomerStats.aggregate_stats.observations_count }}</h3><p class="text-muted">Всего наблюдений</p></div></el-col>
           </el-row>
         </el-card>
       </el-col>

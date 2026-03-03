@@ -1,9 +1,14 @@
 <script setup>
 import { ref } from 'vue';
 import { useUserInfoStore } from '@/stores/user_info_store';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
+
+import axios from 'axios'
+import Cookies from 'js-cookie'
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-CSRFToken"] = Cookies.get("csrftoken");
 
 const username = ref('');
 const password = ref('');

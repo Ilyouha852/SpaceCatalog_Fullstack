@@ -16,7 +16,6 @@ class Observatory(models.Model):
 
 class Astronomer(models.Model):
     name = models.TextField("Имя")
-    research_field = models.TextField("Область исследований")
     observatory = models.ForeignKey("Observatory", on_delete=models.CASCADE, null=True)
     picture = models.ImageField("Изображение", null=True, upload_to="astronomers")
     user = models.OneToOneField("auth.User", on_delete=models.CASCADE, null=True, blank=True, related_name='astronomer')

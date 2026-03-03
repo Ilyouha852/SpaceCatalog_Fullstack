@@ -27,7 +27,7 @@ class TestObservatoryModels(TestCase):
 class TestAstronomerModels(TestCase):
     def test_astronomer_crud(self):
         obs = Observatory.objects.create(name='Obs', phone='123')
-        astro = Astronomer.objects.create(name='Иванов', research_field='Астрономия', observatory=obs)
+        astro = Astronomer.objects.create(name='Иванов', observatory=obs)
         self.assertIsNotNone(astro.id)
 
         self.assertEqual(Astronomer.objects.count(), 1)
@@ -62,7 +62,7 @@ class TestResearcherModels(TestCase):
 class TestObservationModels(TestCase):
     def test_observation_crud(self):
         obs = Observatory.objects.create(name='Obs', phone='123')
-        astro = Astronomer.objects.create(name='A', research_field='F', observatory=obs)
+        astro = Astronomer.objects.create(name='A', observatory=obs)
         researcher = Researcher.objects.create(name='R')
 
         o = Observation.objects.create(astronomer=astro, researcher=researcher, date_time='2025-01-15T10:00:00Z', status='planned')
