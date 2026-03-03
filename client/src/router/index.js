@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserInfoStore } from '@/stores/user_info_store';
 import ObservatoriesView from '@/views/ObservatoriesView.vue';
 import AstronomersView from '@/views/AstronomersView.vue';
 import ResearchersView from '@/views/ResearchersView.vue';

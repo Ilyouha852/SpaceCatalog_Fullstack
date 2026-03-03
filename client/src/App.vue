@@ -51,7 +51,7 @@ async function onLogout() {
           <el-menu-item v-if="is_authenticated" index="/observations">
             <router-link to="/observations">Наблюдения</router-link>
           </el-menu-item>
-          <el-menu-item v-if="userInfoStore.hasPermission('can_manage_space_objects') || is_superuser || user_type === 'astronomer'" index="/space-objects">
+          <el-menu-item v-if="is_superuser || user_type === 'astronomer'" index="/space-objects">
             <router-link to="/space-objects">Космические объекты</router-link>
           </el-menu-item>
           <el-menu-item v-if="userInfoStore.hasPermission('can_see_statistics_page') || userInfoStore.is_superuser" index="/statistics">

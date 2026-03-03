@@ -1,6 +1,7 @@
 from rest_framework.permissions import BasePermission
 from django.utils import timezone
 import time
+
 class IsAstronomerPermission(BasePermission):
     message = "Только астрономы могут выполнять это действие"
     
@@ -40,7 +41,7 @@ class CanCreateObservationsPermission(BasePermission):
         if not request.user.is_authenticated:
             return False
 
-        return request.user.has_perm('general.can_manage_appointments') or hasattr(request.user, 'astronomer') or request.user.is_superuser
+        return request.user.has_perm('general.can_manage_observations') or hasattr(request.user, 'astronomer') or request.user.is_superuser
 
 class CanManageAstronomersPermission(BasePermission):
     message = "У вас нет прав для управления астрономами"
@@ -48,7 +49,7 @@ class CanManageAstronomersPermission(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return request.user.has_perm('general.can_manage_doctors') or request.user.is_superuser
+        return request.user.has_perm('general.can_manage_astronomers') or request.user.is_superuser
 
 class CanManageResearchersPermission(BasePermission):
     message = "У вас нет прав для управления исследователями"
@@ -56,7 +57,7 @@ class CanManageResearchersPermission(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return request.user.has_perm('general.can_manage_patients') or request.user.is_superuser
+        return request.user.has_perm('general.can_manage_researchers') or request.user.is_superuser
 
 class SecondFactorPermission(BasePermission):
     message = "Требуется вторая аутентификация или время действия истекло" 
