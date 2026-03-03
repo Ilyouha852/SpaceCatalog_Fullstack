@@ -2,20 +2,36 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Observatory, Astronomer, Researcher, Observation, SpaceObject
 
-
 class ObservatorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Observatory
         fields = ['id', 'name', 'address', 'phone', 'picture']
 
-
 class AstronomerSerializer(serializers.ModelSerializer):
     observatory = serializers.PrimaryKeyRelatedField(
-        queryset=Observatory.objects.all(), required=True)
+    queryset=Observatory.objects.all(), required=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
+    password = serializers.CharField(write_only=True, required=False)
 
     def create(self, validated_data):
-        return super().create(validated_data)
+        password = validated_data.pop('password', None)
+        name = validated_data.get('name')
+
+        if not password:
+            password = 'astronomer123'
+
+        count = Astronomer.objects.count()
+        next_idx = count + 1
+        username = f"astronomer_{next_idx}"
+
+        user = User.objects.create_user(username=username, password=password)
+
+        if hasattr(user, 'userprofile'):
+            user.userprofile.type = 'astronomer'
+            user.userprofile.name = name
+            user.userprofile.save()
+
+        validated_data['user'] = user
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
@@ -27,28 +43,33 @@ class AstronomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Astronomer
-        fields = ['id', 'name', 'observatory', 'picture', 'user_id']
+        fields = ['id', 'name', 'observatory', 'picture', 'user_id', 'password']
 
 class ResearcherSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     password = serializers.CharField(write_only=True, required=False)
-
-    class Meta:
-        model = Researcher
-        fields = ['id', 'user_id', 'name', 'birth_date', 'phone', 'picture', 'password']
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         name = validated_data.pop('name', None)
         birth_date = validated_data.pop('birth_date', None)
         phone = validated_data.pop('phone', None)
-        if password:
-            username = f"researcher_{phone.replace('+', '')}"
-            user = User.objects.create_user(
-                username=username,
-                password=password
-            )
-            validated_data['user'] = user
+
+        if not password:
+            password = 'researcher123'
+
+        count = Researcher.objects.count()
+        next_idx = count + 1
+        username = f"researcher_{next_idx}"
+
+        user = User.objects.create_user(username=username, password=password)
+
+        if hasattr(user, 'userprofile'):
+            user.userprofile.type = 'researcher'
+            user.userprofile.name = name
+            user.userprofile.save()
+
+        validated_data['user'] = user
 
         researcher = Researcher.objects.create(
             name=name,
@@ -67,6 +88,10 @@ class ResearcherSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+    class Meta:
+        model = Researcher
+        fields = ['id', 'user_id', 'name', 'birth_date', 'phone', 'picture', 'password']
 
 class ObservationSerializer(serializers.ModelSerializer):
     status = serializers.CharField(default=Observation.ObservationStatus.PENDING.value)
