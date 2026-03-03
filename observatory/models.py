@@ -33,7 +33,6 @@ class Researcher(TimestampModel):
     birth_date = models.DateField("Дата рождения", null=True, blank=True)
     phone = models.CharField("Телефон", max_length=20, null=True, blank=True)
     picture = models.ImageField("Изображение", null=True, blank=True, upload_to="researchers")
-    picture = models.ImageField("Изображение", null=True, blank=True, upload_to="researchers")
 
     class Meta:
         verbose_name = "Исследователь"

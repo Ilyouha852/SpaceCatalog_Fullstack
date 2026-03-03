@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Observatory, Astronomer, Researcher, Observation, SpaceObject
+from general.models import UserProfile
 
 class ObservatorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,34 +10,61 @@ class ObservatorySerializer(serializers.ModelSerializer):
 
 class AstronomerSerializer(serializers.ModelSerializer):
     observatory = serializers.PrimaryKeyRelatedField(
-    queryset=Observatory.objects.all(), required=True)
+        queryset=Observatory.objects.all(),
+        required=True
+    )
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     password = serializers.CharField(write_only=True, required=False)
 
     def create(self, validated_data):
+        # Извлекаем поля, которые обрабатываем вручную
         password = validated_data.pop('password', None)
-        name = validated_data.get('name')
+        name = validated_data.pop('name', '')           # name не должен попадать в **kwargs
 
         if not password:
             password = 'astronomer123'
 
-        count = Astronomer.objects.count()
-        next_idx = count + 1
-        username = f"astronomer_{next_idx}"
+        # Генерируем уникальный username безопасно
+        base = 'astronomer'
+        idx = 1
+        username = f"{base}_{idx}"
+        while User.objects.filter(username=username).exists():
+            idx += 1
+            username = f"{base}_{idx}"
 
-        user = User.objects.create_user(username=username, password=password)
+        # Создаём пользователя → сигнал сам создаст UserProfile
+        try:
+            user = User.objects.create_user(username=username, password=password)
+        except Exception as e:
+            raise serializers.ValidationError({
+                'user': f'Could not create user account: {e}'
+            })
 
-        if hasattr(user, 'userprofile'):
-            user.userprofile.type = 'astronomer'
-            user.userprofile.name = name
-            user.userprofile.save()
+        # Заполняем профиль (он уже существует благодаря сигналу)
+        profile = user.userprofile
+        profile.type = UserProfile.Type.astronomer
+        profile.name = name
+        profile.save()
 
-        validated_data['user'] = user
+        # Самое главное — создаём Astronomer
+        astronomer = Astronomer.objects.create(
+            user=user,
+            name=name,
+            **validated_data          # observatory, picture и другие поля модели
+        )
+
+        return astronomer
 
     def update(self, instance, validated_data):
+        # name и observatory обновляем напрямую
         instance.name = validated_data.get('name', instance.name)
         instance.observatory = validated_data.get('observatory', instance.observatory)
         instance.picture = validated_data.get('picture', instance.picture)
+
+        # Если нужно обновить пароль — отдельная логика (не через это поле)
+        # if 'password' in validated_data:
+        #     instance.user.set_password(validated_data['password'])
+        #     instance.user.save()
 
         instance.save()
         return instance
@@ -48,6 +76,9 @@ class AstronomerSerializer(serializers.ModelSerializer):
 class ResearcherSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     password = serializers.CharField(write_only=True, required=False)
+    name = serializers.CharField(required=False, allow_blank=True)
+    birth_date = serializers.DateField(required=False, allow_null=True, input_formats=['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%S.%fZ'])
+    phone = serializers.CharField(required=False, allow_blank=True)
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -58,14 +89,22 @@ class ResearcherSerializer(serializers.ModelSerializer):
         if not password:
             password = 'researcher123'
 
-        count = Researcher.objects.count()
-        next_idx = count + 1
-        username = f"researcher_{next_idx}"
+        base = 'researcher'
+        idx = 1
+        username = f"{base}_{idx}"
+        while User.objects.filter(username=username).exists():
+            idx += 1
+            username = f"{base}_{idx}"
 
-        user = User.objects.create_user(username=username, password=password)
+        try:
+            user = User.objects.create_user(username=username, password=password)
+        except Exception as e:
+            raise serializers.ValidationError({
+                'user': f'Could not create user account: {e}'
+            })
 
         if hasattr(user, 'userprofile'):
-            user.userprofile.type = 'researcher'
+            user.userprofile.type = UserProfile.Type.researcher
             user.userprofile.name = name
             user.userprofile.save()
 
